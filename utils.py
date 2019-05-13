@@ -537,21 +537,23 @@ def rotate_coords(coords, center, angle):
     }
 
 
-def keep_roi(row):
+def keep_roi(row, dimensions):
     """
 
     :param row:
     :param roi_config:
     :return:
     """
+    width, height = dimensions
+
     # Retrieve and round ROI positions.
-    roi_width = row["Xmax"] * row["Width"] - row["Xmin"] * row["Width"]
-    roi_height = row["Ymax"] * row["Height"] - row["Ymin"] * row["Height"]
+    roi_width = row["Xmax"] * width - row["Xmin"] * width
+    roi_height = row["Ymax"] * height - row["Ymin"] * height
 
     # Read frame ratios.
     width_ratio, height_ratio = ROI_CONFIG["ratio"]
 
-    if roi_width >= width_ratio * ROI_WIDTH or row["Height"] >= roi_height * height_ratio:
+    if roi_width >= width_ratio * ROI_WIDTH or roi_height >= height_ratio * ROI_HEIGHT:
         if not row["Is_depiction"]:
             return True
     return False

@@ -72,7 +72,7 @@ def get_rois(csv, csv_config):
     else:
         try:
             os.remove(csv)
-        except Exception as ee:
+        except Exception:
             pass
 
 
@@ -102,6 +102,9 @@ def extract_rois(img_path, rows, roi_config, folder_name):
             # Generate image fullname.
             name = name_roi(roi_config)
 
+            # Get image dimensions.
+            height, width = source.shape
+
             # Pick a random purpose.
             purpose = random.choice(TFRECORD_CONFIG["weights"])
 
@@ -110,15 +113,15 @@ def extract_rois(img_path, rows, roi_config, folder_name):
 
             # Loop over ROIs.
             for index, row in rows.iterrows():
-                if keep_roi(row) or args.ignore_size:
-                    write_csv(DATASET_CSV_PATH, CSV_CONFIG, name, purpose, row, folder_name)
+                if keep_roi(row, (width, height)) or args.ignore_size:
+                    write_csv(DATASET_CSV_PATH, CSV_CONFIG, name, width, height, purpose, row, folder_name)
                     roi_counter += 1
 
             # Save frame if ROIs matched.
             if roi_counter > 0:
                 save_roi(source, name)
-        except Exception as ee:
-            print("{}".format(ee))
+        except Exception:
+            pass
 
 
 def name_roi(roi_config):
@@ -166,22 +169,21 @@ def generate_csv(csv_path, csv_config):
                      "Augmentation", "Purpose", "Generation_date", "Extraction_date", "Augmentation_date"])
 
 
-def write_csv(csv_path, csv_config, name, purpose, row, folder_name):
+def write_csv(csv_path, csv_config, name, width, height, purpose, row, folder_name):
     """
-    Fills the CSV file structure.
+    Fills the CSV file with ROIs.
     :param csv_path: CSV file path.
     :param csv_config: CSV properties.
     :return: void.
     """
-
     with open(csv_path, 'a', newline=csv_config["newline"]) as csv_file:
         fw = csv.writer(csv_file, delimiter=csv_config["delimiter"], quotechar=csv_config["quotechar"],
                         quoting=csv_config["quoting"])
         # Append a new line.
         fw.writerow(
-            [name, folder_name, row["Width"], row["Height"], row["Class"], row["Confidence"], row["Xmin"],
-             row["Ymin"], row["Xmax"], row["Ymax"], row["Is_occluded"], row["Is_truncated"], row["Is_depiction"], False,
-             False, False, "", purpose, datetime.now().strftime("%Y/%m/%d-%H:%M:%S"), "", ""])
+            [name, folder_name, width, height, row["Class"], row["Confidence"], row["Xmin"], row["Ymin"], row["Xmax"],
+             row["Ymax"], row["Is_occluded"], row["Is_truncated"], row["Is_depiction"], False, False, False, "",
+             purpose, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "", ""])
 
 
 def main():
