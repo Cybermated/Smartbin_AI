@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-    ROIs extraction(Regions of Interest).
+    ROIs extraction (Regions of Interest).
     ======================
 
     Extracts ROIs from CSV files for future trainings.
@@ -57,14 +57,14 @@ def get_rois(csv, csv_config):
 
     # Get raw images location.
     folder_name = os.path.splitext(os.path.basename(csv))[0].split('_')[1]
-    img_location = os.path.join(FINAL_FOLDERS_DIR, folder_name + os.sep)
+    img_location = os.path.join(FINAL_FOLDERS_DIR, folder_name)
 
     # Group ROIs by filename.
     grouped_df = group_rois(df, "Path")
 
     # Extract ROIs from each group.
     for group in grouped_df:
-        extract_rois(img_location + group.Path, group.object, ROI_CONFIG, folder_name)
+        extract_rois(os.path.join(img_location, group.Path), group.object, ROI_CONFIG, folder_name)
 
     # Delete or rename CSV file.
     if not args.delete:
@@ -89,7 +89,7 @@ def bandw_roi(frame, color=cv.COLOR_RGB2GRAY):
 def extract_rois(img_path, rows, roi_config, folder_name):
     """
     Extract ROIs from frames to save them to local disk.
-    :param img_path: frame path.
+    :param img_path: frame path..
     :param rows: ROI properties.
     :param roi_config: ROI frame properties.
     :return: void.
@@ -110,8 +110,7 @@ def extract_rois(img_path, rows, roi_config, folder_name):
 
             # Loop over ROIs.
             for index, row in rows.iterrows():
-
-                if keep_roi(row, roi_config) or args.ignore_size:
+                if keep_roi(row) or args.ignore_size:
                     write_csv(DATASET_CSV_PATH, CSV_CONFIG, name, purpose, row, folder_name)
                     roi_counter += 1
 
@@ -174,7 +173,6 @@ def write_csv(csv_path, csv_config, name, purpose, row, folder_name):
     :param csv_config: CSV properties.
     :return: void.
     """
-    row["Class"] = manage_classes(row["Class"])
 
     with open(csv_path, 'a', newline=csv_config["newline"]) as csv_file:
         fw = csv.writer(csv_file, delimiter=csv_config["delimiter"], quotechar=csv_config["quotechar"],
@@ -195,8 +193,12 @@ def main():
     if not os.path.isfile(DATASET_CSV_PATH):
         generate_csv(DATASET_CSV_PATH, CSV_CONFIG)
 
-    for _ in list_files(CSV_DIR, CSV_CONFIG["ext"], CSV_CONFIG["suffix"]):
-        get_rois(_, CSV_CONFIG)
+    # Generate output directory if it doesn't already exists.
+    if not os.path.isdir(ROIS_PATH):
+        os.makedirs(ROIS_PATH)
+
+    for csv_file in list_files(CSV_DIR, CSV_CONFIG["ext"], CSV_CONFIG["suffix"]):
+        get_rois(csv_file, CSV_CONFIG)
 
 
 if __name__ == "__main__":

@@ -52,6 +52,9 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
             print(ee)
             break
 
+        # Pick a random purpose.
+        purpose = random.choice(TFRECORD_CONFIG["weights"])
+
         # Get coords of each item.
         for index, row in rows.iterrows():
             min, max = calculate_coords({"x": float(row["Xmin"]), "y": float(row["Ymin"])},
@@ -78,7 +81,7 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
                     "Is_augmented": False,
                     "Is_augmentation": True,
                     "Augmentation": dict["augmentation"],
-                    "Purpose": row["Purpose"],
+                    "Purpose": purpose,
                     "Generation_date": datetime.now().strftime("%Y/%m/%d-%H:%M:%S"),
                     "Extraction_date": "",
                     "Augmentation_date": ""
@@ -103,7 +106,7 @@ def main():
         print("Reading CSV file {csv}...".format(csv=DATASET_CSV_PATH))
     except Exception as ee:
         print("Error while reading CSV file {csv} : {error}.".format(csv=DATASET_CSV_PATH, error=ee))
-        exit(1)
+        return
 
     # Ignore augmented lines.
     indexes = list(set(df[df['Is_augmented'] == True].index) | set(df[df['Augmentation'] == ""].index))
@@ -123,10 +126,12 @@ def main():
 
         # Read each ROI line.
         for filename, rows in grouped_df:
+            print("Augmenting image {filename}...".format(filename=filename))
+
             # Apply augmentations.
             df, augmented_df = apply_transformations(df, augmented_df, filename, rows, ROI_CONFIG, ROI_TRANSFORMATIONS)
 
-        # Merge datasets and save result to disk.
+        # Merge both datasets and save result to disk.
         df = pd.concat([df.astype(str), augmented_df.astype(str)], ignore_index=False)
         write_df_as_csv(df=df, path=DATASET_CSV_PATH)
 

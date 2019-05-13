@@ -20,12 +20,19 @@ __description__ = "Pre-annotates folders using AI model."
 # Parse args.
 parser = ArgumentParser(description=__description__)
 
-parser.add_argument("--min-confidence", type=str, choices=list(DETECTION_CONFIG["score_treshes"].keys()),
-                    default="medium",
-                    help="Min confidence to reach to display a box, default is {default}.".format(default="medium"))
-parser.add_argument("--max-boxes", type=int, default=DETECTION_CONFIG["max_boxes_to_draw"],
-                    help="Max number of boxes to draw, default is {default}.".format(
+parser.add_argument('-min-c', "--min-confidence", dest="min_confidence",
+                    type=str,
+                    choices=list(SCORE_TRESH.keys()),
+                    default=DETECTION_CONFIG["default_thresh"],
+                    help="Required confidence to display a box, default is {default}.".format(
+                        default=DETECTION_CONFIG["default_thresh"]))
+
+parser.add_argument("-max-b", "--max-boxes", dest='max_boxes',
+                    type=int,
+                    default=DETECTION_CONFIG["max_boxes_to_draw"],
+                    help="Max number of boxes to draw at a time, default is {default}.".format(
                         default=DETECTION_CONFIG["max_boxes_to_draw"]))
+
 args = parser.parse_args()
 
 # Load labelmap file.
@@ -34,13 +41,11 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
                                                             use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
 
-GRAPH_PATH = OUTPUTS_DIR + "frozen_inference_graph.pb"
-
 # Loads a frozen Tensorflow model in memory.
 detection_graph = tf.Graph()
 with detection_graph.as_default():
     od_graph_def = tf.GraphDef()
-    with tf.gfile.GFile(GRAPH_PATH, "rb") as fid:
+    with tf.gfile.GFile(FROZEN_MODEL_PATH, "rb") as fid:
         serialized_graph = fid.read()
         od_graph_def.ParseFromString(serialized_graph)
         tf.import_graph_def(od_graph_def, name='')
@@ -131,13 +136,16 @@ def annotate_folder(folder_path):
 def main():
     """
     Main program.
-    :return:
+    :return: void.
     """
-    for _ in []:
-        df = annotate_folder(_)
+    for folder_path in list_directories(FOLDERS_DIR):
+        # Retrieve annotated folder as a dataframe.
+        df = annotate_folder(folder_path)
+
+        # Save dataframe as CSV if not empty.
         if df is not None:
-            write_df_as_csv(df=df,
-                            path=os.path.join(_, "roi-ai-{}_{}.csv".format(args.min_confidence, os.path.basename(_))))
+            write_df_as_csv(df=df, path=os.path.join(folder_path, "roi-ai-{tresh}_{name}.csv".format(
+                tresh=args.min_confidence, name=os.path.basename(folder_path))))
         else:
             print("No detections / Missing files.")
 

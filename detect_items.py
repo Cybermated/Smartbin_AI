@@ -20,24 +20,40 @@ __description__ = "Retrieves videostream and shows detected items."
 
 # Parse args.
 parser = ArgumentParser(description=__description__)
-parser.add_argument("--video-source", dest="video_source", type=int, default=DEVICE_CONFIG["id"],
+
+parser.add_argument("-v-source", "--video-source", dest="video_source",
+                    type=int,
+                    default=DEVICE_CONFIG["id"],
                     help="Capture device identifier, default is {default}.".format(default=DEVICE_CONFIG["id"]))
-parser.add_argument('-wd', '--width', dest='width', type=int, default=DEVICE_CONFIG["width"],
-                    help='Width of the frames in the video stream, default is {default}.'.format(
-                        default=DEVICE_CONFIG["height"]))
-parser.add_argument('-ht', '--height', dest='height', type=int, default=DEVICE_CONFIG["height"],
-                    help='Height of the frames in the video stream, default is {default}.'.format(
-                        default=DEVICE_CONFIG["height"]))
-parser.add_argument('-num-w', '--num-workers', dest='num_workers', type=int, default=DETECTION_CONFIG["num_workers"],
+
+parser.add_argument("-q", "--quality", dest="quality",
+                    type=str,
+                    default=DEVICE_CONFIG["resolution"],
+                    help="Input quality, default is {default}.".format(default=DEVICE_CONFIG["resolution"]))
+
+parser.add_argument('-num-w', '--num-workers', dest='num_workers',
+                    type=int,
+                    default=DETECTION_CONFIG["num_workers"],
                     help='Number of workers, default is {default}.'.format(default=DETECTION_CONFIG["num_workers"]))
-parser.add_argument('-q-size', '--queue-size', dest='queue_size', type=int, default=DETECTION_CONFIG["queue_size"],
+
+parser.add_argument('-q-size', '--queue-size', dest='queue_size',
+                    type=int,
+                    default=DETECTION_CONFIG["queue_size"],
                     help='Size of the queue, default is {default}.'.format(default=DETECTION_CONFIG["queue_size"]))
-parser.add_argument("--min-confidence", type=str, choices=list(DETECTION_CONFIG["score_treshes"].keys()),
-                    default="medium",
-                    help="Min confidence to reach to display a box, default is {default}.".format(default="medium"))
-parser.add_argument("--max-boxes", type=int, default=DETECTION_CONFIG["max_boxes_to_draw"],
-                    help="Max number of boxes to draw, default is {default}.".format(
+
+parser.add_argument('-min-c', "--min-confidence", dest="min_confidence",
+                    type=str,
+                    choices=list(SCORE_TRESH.keys()),
+                    default=DETECTION_CONFIG["default_thresh"],
+                    help="Required confidence to display a box, default is {default}.".format(
+                        default=DETECTION_CONFIG["default_thresh"]))
+
+parser.add_argument("-max-b", "--max-boxes", dest='max_boxes',
+                    type=int,
+                    default=DETECTION_CONFIG["max_boxes_to_draw"],
+                    help="Max number of boxes to draw at a time, default is {default}.".format(
                         default=DETECTION_CONFIG["max_boxes_to_draw"]))
+
 args = parser.parse_args()
 
 # Load labelmap file.
@@ -45,7 +61,6 @@ label_map = label_map_util.load_labelmap(DETECTION_CONFIG["labelmap_path"])
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=DETECTION_CONFIG["num_classes"],
                                                             use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
-GRAPH_PATH = OUTPUTS_DIR + "frozen_inference_graph.pb"
 
 
 def detect_objects(image_np, sess, detection_graph):
@@ -84,7 +99,7 @@ def detect_objects(image_np, sess, detection_graph):
         use_normalized_coordinates=["use_normalized_coordinates"],
         line_thickness=DETECTION_CONFIG["line_thickness"],
         max_boxes_to_draw=args.max_boxes,
-        min_score_thresh=DETECTION_CONFIG["score_treshes"][args.min_confidence])
+        min_score_thresh=SCORE_TRESH[args.min_confidence])
     return image_np
 
 
@@ -98,21 +113,21 @@ def worker(input_q, output_q):
     detection_graph = tf.Graph()
     with detection_graph.as_default():
         od_graph_def = tf.GraphDef()
-        with tf.gfile.GFile(GRAPH_PATH, 'rb') as fid:
+        with tf.gfile.GFile(FROZEN_MODEL_PATH, 'rb') as fid:
             serialized_graph = fid.read()
             od_graph_def.ParseFromString(serialized_graph)
             tf.import_graph_def(od_graph_def, name='')
 
         sess = tf.Session(graph=detection_graph)
 
-    fps = FPS().start()
-    while True:
-        fps.update()
-        frame = input_q.get()
-        output_q.put(detect_objects(frame, sess, detection_graph))
+        fps = FPS().start()
+        while True:
+            fps.update()
+            frame = input_q.get()
+            output_q.put(detect_objects(frame, sess, detection_graph))
 
-    fps.stop()
-    sess.close()
+        fps.stop()
+        sess.close()
 
 
 def main():
@@ -125,26 +140,28 @@ def main():
     output_q = Queue(maxsize=args.queue_size)
     pool = Pool(args.num_workers, worker, (input_q, output_q))
 
-    # Grab video input.
-    video_capture = WebcamVideoStream(src=args.video_source, width=args.width, height=args.height).start()
-    fps = FPS().start()
+    # Load camera configuration.
+    width, height = INPUT_RESOLUTION[args.quality]["width"], INPUT_RESOLUTION[args.quality]["height"]
 
-    # Init a full-screen window.
-    #cv.namedWindow('Webcam input', cv.WND_PROP_FULLSCREEN)
-    #cv.setWindowProperty('Webcam input', cv.WND_PROP_FULLSCREEN, cv.WINDOW_FULLSCREEN)
+    # Grab video input.
+    video_capture = WebcamVideoStream(src=args.video_source, width=width, height=height).start()
+    fps = FPS().start()
 
     # Read video input.
     while True:
+        # Update framerate.
+        fps.update()
+
         # Grab frame.
         frame = video_capture.read()
 
         # Send frame to AI.
         input_q.put(frame)
 
-        # Show video input.
-        cv.imshow('Webcam input', output_q.get())
+        # Show processed frame.
+        cv.imshow("Webcam videostream ({width} x {height})".format(width=width, height=height), output_q.get())
 
-        # Loop breaker.
+        # Exit program on the Q click.
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
 
