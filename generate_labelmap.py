@@ -45,7 +45,7 @@ def main():
     :return: void.
     """
     if args.delete:
-        labelmap_path = LABELMAP_CONFIG["path"] + LABELMAP_CONFIG["filename"] + LABELMAP_CONFIG["ext"]
+        labelmap_path = os.path.join(LABELMAP_CONFIG["path"], LABELMAP_CONFIG["filename"] + LABELMAP_CONFIG["ext"])
         try:
             # Remove the existing labelmap file.
             if os.path.isfile(labelmap_path):
@@ -54,7 +54,7 @@ def main():
         except Exception as ee:
             print("Error while deleting previous file : {error}.".format(error=ee))
     else:
-        labelmap_path = LABELMAP_CONFIG["path"] + LABELMAP_CONFIG["suffix"] + LABELMAP_CONFIG["ext"]
+        labelmap_path = os.path.join(LABELMAP_CONFIG["path"], LABELMAP_CONFIG["suffix"] + LABELMAP_CONFIG["ext"])
         print("Creating a new file located at {file}...".format(file=labelmap_path))
 
     with open(labelmap_path, "w+") as labelmap_file:

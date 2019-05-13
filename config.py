@@ -8,7 +8,6 @@
 """
 import os
 import csv
-import random
 import string
 import cv2 as cv
 
@@ -27,50 +26,53 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = '2'
 
 # Files extensions.
 IMG_EXT = ("jpg", "png", "jpeg", "bmp")
-VIDEO_EXT = ("mp4", "avi")
+VIDEO_EXT = ("mp4", "avi", "mkv")
 
 ROI_CLASSES = ["battery", "can", "carton_packaging", "glass_bottle", "glass_container", "plastic_bottle",
                "plastic_container", "goblet"]
 
 # Project directories.
-PRETRAINING_DIR = os.path.join("pretraining" + os.sep)
-TRAINING_DIR = os.path.join("training" + os.sep)
+PRETRAINING_DIR = os.path.join("pretraining")
+TRAINING_DIR = os.path.join("training")
 
 # Pre-training directories and paths.
-RAW_IMAGES_DIR = os.path.join(PRETRAINING_DIR, "raw_images" + os.sep)
-RAW_VIDEOS_DIR = os.path.join(PRETRAINING_DIR, "raw_videos" + os.sep)
-CSV_DIR = os.path.join(PRETRAINING_DIR, "annotations" + os.sep, "csv" + os.sep)
-FINAL_FOLDERS_DIR = os.path.join(PRETRAINING_DIR, "annotations", "folders" + os.sep)
-FOLDERS_DIR = os.path.join(PRETRAINING_DIR, "folders" + os.sep)
-ROIS_DIR = os.path.join(PRETRAINING_DIR, "dataset" + os.sep)
-ROIS_PATH = os.path.join(ROIS_DIR, "images" + os.sep)
+RAW_IMAGES_DIR = os.path.join(PRETRAINING_DIR, "raw_images")
+RAW_VIDEOS_DIR = os.path.join(PRETRAINING_DIR, "raw_videos")
+CSV_DIR = os.path.join(PRETRAINING_DIR, "annotations", "csv")
+FINAL_FOLDERS_DIR = os.path.join(PRETRAINING_DIR, "annotations", "folders")
+FOLDERS_DIR = os.path.join(PRETRAINING_DIR, "folders")
+ROIS_DIR = os.path.join(PRETRAINING_DIR, "dataset")
+ROIS_PATH = os.path.join(ROIS_DIR, "images")
 DATASET_CSV_PATH = os.path.join(ROIS_DIR, "dataset.csv")
 
 # Training directories and paths.
-TFRECORDS_DIR = os.path.join(TRAINING_DIR, "tfrecords" + os.sep)
-TRAINING_CONFIG_DIR = os.path.join(TRAINING_DIR, "config" + os.sep)
-TUNE_CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, "tune_checkpoints" + os.sep)
-CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, "checkpoints" + os.sep)
-OUTPUTS_DIR = os.path.join(TRAINING_DIR, "outputs" + os.sep)
+TFRECORDS_DIR = os.path.join(TRAINING_DIR, "tfrecords")
+TRAINING_CONFIG_DIR = os.path.join(TRAINING_DIR, "config")
+TUNE_CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, "tune_checkpoints")
+CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, "checkpoints")
+OUTPUTS_DIR = os.path.join(TRAINING_DIR, "outputs")
+FROZEN_MODEL_PATH = os.path.join(OUTPUTS_DIR, "frozen_inference_graph.pb")
 
 DATE_FORMAT = "{day}/{month}/{year} {hour}:{minute}:{second}"
 
 # Detection configuration.
 DETECTION_CONFIG = {
     "num_workers": 4,
-    "queue_size": 8,
-    "score_treshes": {
-        "very_low": .3,
-        "low": .5,
-        "medium": .7,
-        "high": .9,
-    },
+    "queue_size": 12,
+    "default_thresh": "medium",
     "line_thickness": 3,
     "use_normalize_coordinates": True,
     "max_boxes_to_draw": 5,
     "num_classes": len(ROI_CLASSES),
-    "model_dir": OUTPUTS_DIR + "frozen_inference_graph.pb",
-    "labelmap_path": TRAINING_CONFIG_DIR + "smartbin_labelmap.pbtxt"
+    "model_dir": os.path.join(OUTPUTS_DIR, "frozen_inference_graph.pb"),
+    "labelmap_path": os.path.join(TRAINING_CONFIG_DIR, "smartbin_labelmap.pbtxt")
+}
+
+SCORE_TRESH = {
+    "very_low": .3,
+    "low": .5,
+    "medium": .7,
+    "high": .9,
 }
 
 # ROIs extraction.
@@ -98,7 +100,6 @@ VIDEO_CONFIG = {
     "interval": pow(2, 3),
     "suffix": "_extracted",
 }
-CAPTURE_INTERVAL = pow(2, 3)
 FRAME_CONFIG = {
     "chars": string.digits + string.ascii_lowercase,
     "size": pow(2, 4),
@@ -116,7 +117,7 @@ FOLDER_CONFIG = {
     "chars": string.digits + string.ascii_lowercase,
     "size": pow(2, 3),
     "date": False,
-    "img_dir": os.path.join("img" + os.sep)
+    "img_dir": "img"
 }
 
 # TFRecords generations.
@@ -140,8 +141,22 @@ LABELMAP_CONFIG = {
 # Capture options.
 DEVICE_CONFIG = {
     "id": 0,
-    "width": 640,
-    "height": 480
+    "resolution": "hd",
+}
+
+INPUT_RESOLUTION = {
+    "sd": {
+        "width": 640,
+        "height": 480
+    },
+    "hd": {
+        "width": 1280,
+        "height": 720
+    },
+    "full-hd": {
+        "width": 1920,
+        "height": 1080
+    }
 }
 
 # Model trainer.

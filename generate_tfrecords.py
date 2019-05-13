@@ -14,7 +14,6 @@ import tensorflow as tf
 from utils import *
 from config import *
 from argparse import ArgumentParser
-from collections import namedtuple
 
 from object_detection.utils import dataset_util
 
@@ -26,18 +25,6 @@ parser.add_argument("--record", default=TFRECORD_CONFIG["default"], choices=("tr
                     help="Purpose of the tensorflow recording file, default is {default}.".format(
                         default=TFRECORD_CONFIG["default"]))
 args = parser.parse_args()
-
-
-def group_rois(df, group):
-    """
-    Groups ROIs by their filenames.
-    :param df: dataframe.
-    :param group: which column to group on.
-    :return: grouped dataframe.
-    """
-    data = namedtuple("data", ["Filename", "object"])
-    gb = df.groupby(group)
-    return [data(path, gb.get_group(x)) for path, x in zip(gb.groups.keys(), gb.groups)]
 
 
 def create_tfrecords(df, filename, rows):
@@ -59,12 +46,15 @@ def create_tfrecords(df, filename, rows):
     classes_text = []
     classes_id = []
 
-    with tf.gfile.GFile(file_fullpath, "rb") as fid:
+    with tf.gfile.GFile(file_fullpath, 'rb') as fid:
         encoded_file = fid.read()
 
     for index, row in rows.iterrows():
         # Exclude non-relevant ROIs (depictions excluded).
         if not row["Is_extracted"] and row["Purpose"] == args.record and not row["Is_depiction"]:
+            # Change class name if necessary.
+            row["Class"] = manage_classes(row["Class"])
+
             # Create a new TFRecord.
             xmins.append(row["Xmin"])
             xmaxs.append(row["Xmax"])

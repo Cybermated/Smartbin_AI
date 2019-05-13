@@ -8,28 +8,26 @@
     Displays in real-time the videostream of any recording plugged device.
 """
 
+from utils import *
 from config import *
 from argparse import ArgumentParser
-from pkg_resources import parse_version
 
 __description__ = "Displays in real-time the videostream of any recording plugged device."
 
 # Parse args.
 parser = ArgumentParser(description=__description__)
-parser.add_argument("--device", type=int, default=DEVICE_CONFIG["id"],
+
+parser.add_argument("-v-source", "--video-source", dest="video_source",
+                    type=int,
+                    default=DEVICE_CONFIG["id"],
                     help="Capture device identifier, default is {default}.".format(default=DEVICE_CONFIG["id"]))
+
+parser.add_argument("-q", "--quality", dest="quality",
+                    type=str,
+                    default=DEVICE_CONFIG["resolution"],
+                    help="Input quality, default is {default}.".format(default=DEVICE_CONFIG["resolution"]))
+
 args = parser.parse_args()
-
-
-def capPropId(prop):
-    """
-    Gets property identifier of the video capture device by name.
-    :param prop: string.
-    :return: void.
-    """
-    OPCV3 = parse_version(cv.__version__) >= parse_version("3")
-    return getattr(cv if OPCV3 else cv.cv,
-                   ("" if OPCV3 else "CV_") + "CAP_PROP_" + prop)
 
 
 def main():
@@ -41,25 +39,24 @@ def main():
     # Get the first video input.
     try:
         # Retrieve video input.
-        cap = cv.VideoCapture(args.device)
+        cap = cv.VideoCapture(args.video_source)
+
+        width, height = INPUT_RESOLUTION[args.quality]["width"], INPUT_RESOLUTION[args.quality]["height"]
 
         # Set input properties.
-        cap.set(capPropId("FRAME_WIDTH"), DEVICE_CONFIG["width"])
-        cap.set(capPropId("FRAME_HEIGHT"), DEVICE_CONFIG["height"])
+        cap.set(get_prop_id("FRAME_WIDTH"), width)
+        cap.set(get_prop_id("FRAME_HEIGHT"), height)
 
         while True:
             # Capture frame-by-frame.
             ret, frame = cap.read()
 
             if ret:
-                # Operations on the frame.
-                gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-
                 # Display the frame.
-                cv.imshow("Webcam videostream", gray)
+                cv.imshow("Webcam videostream ({width} x {height})".format(width=width, height=height), frame)
 
                 # Exit program on the Q click.
-                if cv.waitKey(1) & 0xFF == ord("q"):
+                if cv.waitKey(1) & 0xFF == ord('q'):
                     break
             else:
                 break

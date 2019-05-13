@@ -7,6 +7,8 @@
     Collection of useful functions.
 """
 
+import re
+import random
 import numpy as np
 import skimage as sk
 
@@ -17,6 +19,7 @@ from skimage import exposure
 from skimage import transform
 from datetime import datetime
 from collections import namedtuple
+from pkg_resources import parse_version
 
 augmentation_config = TRANSFORMATION_CONFIG
 
@@ -36,15 +39,15 @@ def frange(start, stop=None, step=None):
         start = start + step
 
 
-def random_name(chars, size, date=True):
+def random_name(chars, size, use_date=True):
     """
     Generates a random filename string.
     :param chars: allowed chars.
     :param size: random name size.
-    :param date: add current date to string.
+    :param use_date: add current date to string.
     :return: random filename string.
     """
-    if date:
+    if use_date:
         return datetime.now().strftime("%Y%m%d%H%M%S") + "-" + "".join(random.choice(chars) for _ in range(size))
     return "".join(random.choice(chars) for _ in range(size))
 
@@ -67,7 +70,7 @@ def list_directories(dir):
     return [os.path.join(dir, x) for x in os.listdir(dir) if os.path.isdir(os.path.join(dir, x))]
 
 
-def list_files(dir, extensions, suffix=None):
+def list_files(dir, extensions=None, suffix=None):
     """
     Returns all files in a specific directory with specific extensions.
     :param dir: target directory path.
@@ -76,11 +79,15 @@ def list_files(dir, extensions, suffix=None):
     :return: array of files.
     """
 
-    if suffix is not None:
+    if extensions is None:
+        if suffix is None:
+            return [os.path.join(dir, filename) for filename in os.listdir(dir)]
+        return [os.path.join(dir, filename) for filename in os.listdir(dir) if suffix not in filename]
+    if suffix is None:
         return [os.path.join(dir, filename) for filename in os.listdir(dir) if
-                get_file_extension(filename) in extensions and suffix not in filename]
+                get_file_extension(filename) in extensions]
     return [os.path.join(dir, filename) for filename in os.listdir(dir) if
-            get_file_extension(filename) in extensions]
+            get_file_extension(filename) in extensions and suffix not in filename]
 
 
 def get_file_extension(filename):
@@ -124,7 +131,7 @@ def manage_classes(roi_class):
     """
     if roi_class == "tin_can":
         roi_class = "can"
-    if roi_class == "plastic_goblet":
+    elif roi_class == "plastic_goblet":
         roi_class = "goblet"
     return roi_class
 
@@ -160,6 +167,16 @@ def write_df_as_csv(df, path):
               quotechar=CSV_CONFIG["quotechar"])
 
 
+def get_prop_id(property):
+    """
+    Gets property identifier of the video capture device by name.
+    :param property: property name.
+    :return: void.
+    """
+    OPCV3 = parse_version(cv.__version__) >= parse_version("3")
+    return getattr(cv if OPCV3 else cv.cv, ("" if OPCV3 else "CV_") + "CAP_PROP_" + property)
+
+
 def get_detection_boxes(boxes, classes, scores, category_index, tresh_level,
                         max_boxes_to_draw=DETECTION_CONFIG["max_boxes_to_draw"]):
     """
@@ -184,6 +201,7 @@ def get_detection_boxes(boxes, classes, scores, category_index, tresh_level,
             class_name = "N/A"
             ymin, xmin, ymax, xmax = boxes[i].tolist()
             confidence = round(scores[i], 2)
+            print(confidence)
 
             if classes[i] in category_index.keys():
                 class_name = category_index[classes[i]]["name"]
@@ -202,6 +220,33 @@ def get_detection_boxes(boxes, classes, scores, category_index, tresh_level,
                 }
             )
     return output
+
+
+def find_latest_checkpoint(dir, prefix):
+    """
+    Finds latest trained checkpoint in the specified directory.
+    :param dir:
+    :param prefix:
+    :return:
+    """
+    checkpoints = []
+    regex = r"^" + re.escape(prefix) + r"-(\d{1,}).{0,}|$"
+
+    if not os.path.isdir(dir):
+        return
+
+    if not os.listdir(dir):
+        return
+
+    for file in list_files(dir):
+        match = re.match(regex, os.path.basename(file))
+        if match:
+            checkpoints.append(match.group(1))
+
+    if not checkpoints:
+        return
+
+    return os.path.join(dir, "{prefix}-{step}".format(prefix=prefix, step=max(checkpoints)))
 
 
 def augmentation_router(image_array, augmentations):
@@ -492,7 +537,7 @@ def rotate_coords(coords, center, angle):
     }
 
 
-def keep_roi(row, roi_config):
+def keep_roi(row):
     """
 
     :param row:
@@ -504,7 +549,7 @@ def keep_roi(row, roi_config):
     roi_height = row["Ymax"] * row["Height"] - row["Ymin"] * row["Height"]
 
     # Read frame ratios.
-    width_ratio, height_ratio = roi_config["ratio"]
+    width_ratio, height_ratio = ROI_CONFIG["ratio"]
 
     if roi_width >= width_ratio * ROI_WIDTH or row["Height"] >= roi_height * height_ratio:
         if not row["Is_depiction"]:

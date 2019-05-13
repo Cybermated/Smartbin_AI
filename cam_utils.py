@@ -7,85 +7,111 @@
     Collection of useful functions for webcam detection.
 """
 
-import cv2
-import datetime
-
+from utils import *
+from config import *
 from threading import Thread
-from pkg_resources import parse_version
-
-OPCV3 = parse_version(cv2.__version__) >= parse_version("3")
-
-
-def capPropId(prop):
-    return getattr(cv2 if OPCV3 else cv2.cv,
-                   ("" if OPCV3 else "CV_") + "CAP_PROP_" + prop)
 
 
 class FPS:
+    """
+    Class to get information about framerate.
+    """
+
     def __init__(self):
-        # store the start time, end time, and total number of frames
-        # that were examined between the start and end intervals
+        """
+        Stores the start time, end time, and total number of frames that were examined
+        between the start and end intervals.
+        """
         self._start = None
         self._end = None
         self._numFrames = 0
 
     def start(self):
-        # start the timer
-        self._start = datetime.datetime.now()
+        """
+        Starts the timer.
+        :return: itself.
+        """
+        self._start = datetime.now()
         return self
 
     def stop(self):
-        # stop the timer
-        self._end = datetime.datetime.now()
+        """
+        Stops the timer.
+        :return: void.
+        """
+        self._end = datetime.now()
 
     def update(self):
-        # increment the total number of frames examined during the
-        # start and end intervals
+        """
+        Increments the total number of frames examined during the start and end intervals
+        :return: void.
+        """
         self._numFrames += 1
 
     def elapsed(self):
-        # return the total number of seconds between the start and
-        # end interval
+        """
+        Returns the total number of seconds between the start and  end interval.
+        :return: elapsed time in seconds.
+        """
         return (self._end - self._start).total_seconds()
 
     def fps(self):
-        # compute the (approximate) frames per second
+        """
+        Computes the (approximate) frames per second.
+        :return: number of frame per second.
+        """
         return self._numFrames / self.elapsed()
 
 
 class WebcamVideoStream:
+    """
+    Class to retrieve the videostream of a capture device frame per frame.
+    """
+
     def __init__(self, src, width, height):
-        # initialize the video camera stream and read the first frame
-        # from the stream
-        self.stream = cv2.VideoCapture(src)
-        self.stream.set(capPropId("FRAME_WIDTH"), width)
-        self.stream.set(capPropId("FRAME_HEIGHT"), height)
+        """
+        # Initializes the video camera stream and read the first frame from the stream.
+        :param src: capture device identifier.
+        :param width: width.
+        :param height: height.
+        """
+        self.stream = cv.VideoCapture(src)
+        self.stream.set(get_prop_id("FRAME_WIDTH"), width)
+        self.stream.set(get_prop_id("FRAME_HEIGHT"), height)
 
         (self.grabbed, self.frame) = self.stream.read()
-
-        # initialize the variable used to indicate if the thread should
-        # be stopped
         self.stopped = False
 
     def start(self):
-        # start the thread to read frames from the video stream
+        """
+        Starts the Thread to read frames from the video stream.
+        :return: itself.
+        """
         Thread(target=self.update, args=()).start()
         return self
 
     def update(self):
-        # keep looping infinitely until the thread is stopped
+        """
+        Keeps looping infinitely until the Thread is stopped.
+        :return: void.
+        """
         while True:
-            # if the thread indicator variable is set, stop the thread
             if self.stopped:
                 return
 
-            # otherwise, read the next frame from the stream
+            # Read the next frame from the stream.
             (self.grabbed, self.frame) = self.stream.read()
 
     def read(self):
-        # return the frame most recently read
+        """
+        Returns the frame the most recently read.
+        :return: frame.
+        """
         return self.frame
 
     def stop(self):
-        # indicate that the thread should be stopped
+        """
+        Indicates that the Thread should be stopped.
+        :return: void.
+        """
         self.stopped = True
