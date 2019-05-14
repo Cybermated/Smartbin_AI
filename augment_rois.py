@@ -48,8 +48,7 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
             # Save transformed image to disk.
             name = random_name(roi_config["chars"], roi_config["size"], True) + roi_config["ext"]
             io.imsave(get_roi_fullpath(name), dict["image"])
-        except Exception as ee:
-            print(ee)
+        except Exception:
             break
 
         # Pick a random purpose.
@@ -82,14 +81,14 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
                     "Is_augmentation": True,
                     "Augmentation": dict["augmentation"],
                     "Purpose": purpose,
-                    "Generation_date": datetime.now().strftime("%Y/%m/%d-%H:%M:%S"),
+                    "Generation_date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     "Extraction_date": "",
                     "Augmentation_date": ""
                 }
                 , ignore_index=True)
 
             # Update ROI augmentation status.
-            df.loc[index, "Augmentation_date"] = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+            df.loc[index, "Augmentation_date"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             df.loc[index, "Is_augmented"] = True
 
     return df, augmented_df

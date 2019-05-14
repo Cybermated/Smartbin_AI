@@ -261,7 +261,9 @@ def augmentation_router(image_array, augmentations):
     dict = {
         "augmentation": augmentations,
         "image": image_array,
-        "angle": 0
+        "angle": 0,
+        "gamma": 0,
+        "gain": 0
     }
 
     for augmentation in augmentation_queue:
@@ -300,7 +302,7 @@ def augmentation_router(image_array, augmentations):
             dict["image"] = random_blur(dict["image"])
 
         elif augmentation == "adjust_gamma":
-            dict["image"] = adjust_gamma(dict["image"])
+            dict["image"], dict["gain"], dict["gamma"] = adjust_gamma(dict["image"])
 
         elif augmentation == "adjust_sigmoid":
             dict["image"] = adjust_sigmoid(dict["image"])
