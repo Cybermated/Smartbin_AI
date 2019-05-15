@@ -37,7 +37,7 @@ def create_tfrecords(df, filename, rows):
     """
     counter = 0
     file_fullpath = get_roi_fullpath(filename).encode("utf8")
-    file_extension = filename.split('.')[-1]
+    file_extension = get_file_extension(file_fullpath)
     image_format = file_extension.encode("utf8")
     xmins = []
     xmaxs = []
@@ -50,8 +50,13 @@ def create_tfrecords(df, filename, rows):
         encoded_file = fid.read()
 
     for index, row in rows.iterrows():
-        # Exclude non-relevant ROIs (depictions excluded).
-        if not row["Is_extracted"] and row["Purpose"] == args.record and not row["Is_depiction"]:
+
+        # Exclude already extracted ROIs and ROIs without the right purpose.
+        if row["Is_extracted"] or row["Purpose"] != args.record:
+            break
+
+        # Exclude depictions.
+        if not row["Is_depiction"]:
             # Change class name if necessary.
             row["Class"] = manage_classes(row["Class"])
 
@@ -65,13 +70,14 @@ def create_tfrecords(df, filename, rows):
             counter += 1
 
             # Update ROI extraction status.
-            df.loc[index, "Extraction_date"] = datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+            df.loc[index, "Extraction_date"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
             df.loc[index, "Is_extracted"] = True
 
     if xmins:
+        width, height = int(row["Width"]), int(row["Height"])
         return df, tf.train.Example(features=tf.train.Features(feature={
-            "image/height": dataset_util.int64_feature(row["Height"]),
-            "image/width": dataset_util.int64_feature(row["Width"]),
+            "image/height": dataset_util.int64_feature(width),
+            "image/width": dataset_util.int64_feature(height),
             "image/filename": dataset_util.bytes_feature(file_fullpath),
             "image/source_id": dataset_util.bytes_feature(file_fullpath),
             "image/encoded": dataset_util.bytes_feature(encoded_file),
@@ -120,7 +126,7 @@ def main(_):
         # Close record file.
         writer.close()
 
-        # Update the dataset CSV file.
+        # Save dataset.
         df.to_csv(DATASET_CSV_PATH, mode='w', header=True, index=False, quoting=CSV_CONFIG["quoting"],
                   quotechar=CSV_CONFIG["quotechar"])
     else:

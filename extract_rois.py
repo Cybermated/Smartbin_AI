@@ -8,6 +8,13 @@
     Extracts ROIs from CSV files for future trainings.
 """
 
+
+class Window:
+
+    def __init__(self):
+        pass
+
+
 import pandas as pd
 
 from utils import *
@@ -172,9 +179,15 @@ def generate_csv(csv_path, csv_config):
 def write_csv(csv_path, csv_config, name, width, height, purpose, row, folder_name):
     """
     Fills the CSV file with ROIs.
-    :param csv_path: CSV file path.
-    :param csv_config: CSV properties.
-    :return: void.
+    :param csv_path:
+    :param csv_config:
+    :param name:
+    :param width:
+    :param height:
+    :param purpose:
+    :param row:
+    :param folder_name:
+    :return:
     """
     with open(csv_path, 'a', newline=csv_config["newline"]) as csv_file:
         fw = csv.writer(csv_file, delimiter=csv_config["delimiter"], quotechar=csv_config["quotechar"],
@@ -182,7 +195,7 @@ def write_csv(csv_path, csv_config, name, width, height, purpose, row, folder_na
         # Append a new line.
         fw.writerow(
             [name, folder_name, width, height, row["Class"], row["Confidence"], row["Xmin"], row["Ymin"], row["Xmax"],
-             row["Ymax"], row["Is_occluded"], row["Is_truncated"], row["Is_depiction"], False, False, False, "",
+             row["Ymax"], row["Is_occluded"], row["Is_truncated"], row["Is_depiction"], "False", "False", "False", "",
              purpose, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "", ""])
 
 

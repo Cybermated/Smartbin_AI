@@ -76,9 +76,9 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
                     "Is_occluded": row["Is_occluded"],
                     "Is_truncated": row["Is_truncated"],
                     "Is_depiction": row["Is_depiction"],
-                    "Is_extracted": False,
-                    "Is_augmented": False,
-                    "Is_augmentation": True,
+                    "Is_extracted": "False",
+                    "Is_augmented": "False",
+                    "Is_augmentation": "True",
                     "Augmentation": dict["augmentation"],
                     "Purpose": purpose,
                     "Generation_date": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
@@ -89,7 +89,7 @@ def apply_transformations(df, augmented_df, filename, rows, roi_config, transfor
 
             # Update ROI augmentation status.
             df.loc[index, "Augmentation_date"] = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            df.loc[index, "Is_augmented"] = True
+            df.loc[index, "Is_augmented"] = "True"
 
     return df, augmented_df
 
@@ -130,9 +130,17 @@ def main():
             # Apply augmentations.
             df, augmented_df = apply_transformations(df, augmented_df, filename, rows, ROI_CONFIG, ROI_TRANSFORMATIONS)
 
-        # Merge both datasets and save result to disk.
-        df = pd.concat([df.astype(str), augmented_df.astype(str)], ignore_index=False)
-        write_df_as_csv(df=df, path=DATASET_CSV_PATH)
+        # Concat both datasets.
+        final_df = pd.concat([df.astype(str), augmented_df], ignore_index=False, sort=True)
+
+        # Reindex dataset.
+        final_df = final_df.reindex(
+            columns=["Filename", "Folder", "Width", "Height", "Class", "Confidence", "Xmin", "Ymin", "Xmax", "Ymax",
+                     "Is_occluded", "Is_truncated", "Is_depiction", "Is_extracted", "Is_augmented", "Is_augmentation",
+                     "Augmentation", "Purpose", "Generation_date", "Extraction_date", "Augmentation_date"])
+
+        # Write dataset.
+        write_df_as_csv(df=final_df, path=DATASET_CSV_PATH)
 
         print("{count} augmentations have been performed.".format(count=augmented_df.shape[0]))
 
