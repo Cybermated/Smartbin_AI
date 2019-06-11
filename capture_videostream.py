@@ -6,6 +6,13 @@
     ======================
 
     Displays in real-time the videostream of any recording plugged device.
+
+    Usage:
+        capture_videostream.py [--video-source 0 --quality hd]
+
+    Options:
+        video-source (int): Capture device ID.
+        quality (str): Input quality.
 """
 
 from utils import *
