@@ -5,7 +5,19 @@
     Items detection.
     ======================
     Retrieves videostream and shows detected items.
+
+    Usage:
+        detect_items.py [--video-source 0 --quality hd --num-workers 4 --queue-size 8 --min--confidence fair --max-boxes 10]
+
+    Options:
+        video-source (int): Capture device ID.
+        quality (str): Input quality.
+        num-workers (int): Number of Threads.
+        queue-size (int): Thread queue size.
+        min-confidence (str): Required confidence level to display a box.
+        max-boxes (int): Maximum number of boxes to display at a time.
 """
+
 import tensorflow as tf
 
 from utils import *

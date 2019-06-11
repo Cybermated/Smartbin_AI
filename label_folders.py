@@ -7,6 +7,7 @@
 
     Pre-annotates folders using AI model.
 """
+
 import pandas as pd
 import tensorflow as tf
 
@@ -19,6 +20,9 @@ __description__ = "Pre-annotates folders using AI model."
 
 # Parse args.
 parser = ArgumentParser(description=__description__)
+
+parser.add_argument("--greyscale", type=bool, default=False,
+                    help="Convert source frames to greyscale, default is {default}.".format(default=False))
 
 parser.add_argument('-min-c', "--min-confidence", dest="min_confidence",
                     type=str,
@@ -45,7 +49,7 @@ category_index = label_map_util.create_category_index(categories)
 detection_graph = tf.Graph()
 with detection_graph.as_default():
     od_graph_def = tf.GraphDef()
-    with tf.gfile.GFile(FROZEN_MODEL_PATH, "rb") as fid:
+    with tf.gfile.GFile(FROZEN_MODEL_PATH, 'rb') as fid:
         serialized_graph = fid.read()
         od_graph_def.ParseFromString(serialized_graph)
         tf.import_graph_def(od_graph_def, name='')
@@ -84,7 +88,6 @@ def annotate_folder(folder_path):
     :param folder_path:
     :return:
     """
-    new_df = pd.DataFrame()
     csv_path = os.path.join(folder_path, "roi_{folder}.csv".format(folder=os.path.basename(folder_path)))
 
     # Skip empty folders.
@@ -94,13 +97,14 @@ def annotate_folder(folder_path):
     # Skip if CSV is missing.
     try:
         df = pd.read_csv(csv_path)
-        print("Reading CSV file {csv}...".format(csv=DATASET_CSV_PATH))
+        print("Reading CSV file {csv}...".format(csv=os.path.abspath(folder_path)))
     except Exception as ee:
-        print("Error while reading CSV file {csv} : {error}.".format(csv=DATASET_CSV_PATH, error=ee))
+        print("Error while reading CSV file {csv} : {error}.".format(csv=os.path.abspath(folder_path), error=ee))
         return
 
     # Detect items on each frame.
     with tf.Session(graph=detection_graph) as sess:
+        new_df = pd.DataFrame()
         for index, row in df.iterrows():
             detections = detect_items(image_path=os.path.join(folder_path, row["Path"]), session=sess)
             if not detections:
@@ -130,7 +134,9 @@ def annotate_folder(folder_path):
                         "Is_truncated": False,
                         "Is_depiction": False
                     }, ignore_index=True)
-    return new_df
+
+    # Force dataset indexation.
+    return new_df.reindex(columns=CSV_STRUCTURE['annotation'])
 
 
 def main():

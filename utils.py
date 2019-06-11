@@ -8,48 +8,34 @@
 """
 
 import re
+import pytz
 import random
 import numpy as np
 import skimage as sk
 
 from config import *
-from skimage import util
-from skimage import filters
-from skimage import exposure
-from skimage import transform
+from PIL import Image
 from datetime import datetime
 from collections import namedtuple
 from pkg_resources import parse_version
+from skimage import exposure, filters, transform, util
 
 augmentation_config = TRANSFORMATION_CONFIG
 
 
-def frange(start, stop=None, step=None):
-    if stop is None:
-        stop = start + 0.0
-        start = 0.0
-    if step is None:
-        step = 1.0
-    while True:
-        if step > 0 and start >= stop:
-            break
-        elif step < 0 and start <= stop:
-            break
-        yield ("%g" % start)
-        start = start + step
-
-
-def random_name(chars, size, use_date=True):
+def random_name(chars, size, use_date=True, date_pattern=DATE_FORMAT):
     """
-    Generates a random filename string.
+    Generates a random file name.
     :param chars: allowed chars.
     :param size: random name size.
     :param use_date: add current date to string.
+    :param date_pattern: date pattern to apply if use_date is set to True.
     :return: random filename string.
     """
-    if use_date:
-        return datetime.now().strftime("%Y%m%d%H%M%S") + "-" + "".join(random.choice(chars) for _ in range(size))
-    return "".join(random.choice(chars) for _ in range(size))
+    if use_date and not ''.__eq__(date_pattern):
+        return get_current_datetime(format=True, pattern=date_pattern) + '-' + ''.join(
+            random.choice(chars) for _ in range(size))
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def add_suffix(file, suffix):
@@ -60,13 +46,18 @@ def add_suffix(file, suffix):
     :return: void.
     """
     dirname, filename = os.path.split(file)
-    split = filename.split(".")
-    new_filename = "{path}{sep}{file}{suffix}.{ext}".format(path=dirname, sep=os.sep, file=split[0], suffix=suffix,
+    split = filename.split('.')
+    new_filename = '{path}{sep}{file}{suffix}.{ext}'.format(path=dirname, sep=os.sep, file=split[0], suffix=suffix,
                                                             ext=split[1])
     os.rename(file, new_filename)
 
 
 def list_directories(dir):
+    """
+    Returns a list of subdirectories in the specified directory.
+    :param dir: parent directory path.
+    :return: a list of directories.
+    """
     return [os.path.join(dir, x) for x in os.listdir(dir) if os.path.isdir(os.path.join(dir, x))]
 
 
@@ -97,9 +88,18 @@ def get_file_extension(filename):
     :return:
     """
     try:
-        return filename.split(".")[-1]
-    except Exception as ee:
+        return filename.split('.')[-1]
+    except Exception:
         return None
+
+
+def get_roi_name(config=ROI_CONFIG):
+    """
+    Generates ROI filenames.
+    :param config:
+    :return: ROI full path.
+    """
+    return random_name(config['chars'], config['size']) + config['ext']
 
 
 def get_roi_fullpath(name):
@@ -111,14 +111,14 @@ def get_roi_fullpath(name):
     return os.path.join(ROIS_PATH, name)
 
 
-def group_rois(df, column):
+def group_dataframe(df, column):
     """
     Groups dataframe by the specified column.
     :param df: input dataframe.
     :param column: which column to group by.
     :return: grouped dataframe.
     """
-    data = namedtuple("data", [column, "object"])
+    data = namedtuple('data', [column, 'object'])
     gb = df.groupby(column)
     return [data(path, gb.get_group(x)) for path, x in zip(gb.groups.keys(), gb.groups)]
 
@@ -129,10 +129,10 @@ def manage_classes(roi_class):
     :param roi_class: original class name.
     :return: final class name.
     """
-    if roi_class == "tin_can":
-        roi_class = "can"
-    elif roi_class == "plastic_goblet":
-        roi_class = "goblet"
+    if roi_class == 'tin_can':
+        roi_class = 'can'
+    elif roi_class == 'plastic_goblet':
+        roi_class = 'goblet'
     return roi_class
 
 
@@ -143,7 +143,7 @@ def class_text_to_int(class_name, classes=ROI_CLASSES):
     :param classes: all classes.
     :return: internal ID of the class.
     """
-    return classes.index(class_name) + LABELMAP_CONFIG["start"]
+    return classes.index(class_name) + LABELMAP_CONFIG['start']
 
 
 def int_to_class_text(class_id, classes=ROI_CLASSES):
@@ -153,7 +153,7 @@ def int_to_class_text(class_id, classes=ROI_CLASSES):
     :param classes: all classes.
     :return: class_name.
     """
-    return classes[class_id - LABELMAP_CONFIG["start"]]
+    return classes[class_id - LABELMAP_CONFIG['start']]
 
 
 def write_df_as_csv(df, path):
@@ -163,8 +163,8 @@ def write_df_as_csv(df, path):
     :param path:
     :return:
     """
-    df.to_csv(path, mode='w', header=True, index=False, quoting=CSV_CONFIG["quoting"],
-              quotechar=CSV_CONFIG["quotechar"])
+    df.to_csv(path, mode='w', header=True, index=False, quoting=CSV_CONFIG['quoting'],
+              quotechar=CSV_CONFIG['quotechar'])
 
 
 def get_prop_id(property):
@@ -173,12 +173,12 @@ def get_prop_id(property):
     :param property: property name.
     :return: void.
     """
-    OPCV3 = parse_version(cv.__version__) >= parse_version("3")
-    return getattr(cv if OPCV3 else cv.cv, ("" if OPCV3 else "CV_") + "CAP_PROP_" + property)
+    OPCV3 = parse_version(cv.__version__) >= parse_version('3')
+    return getattr(cv if OPCV3 else cv.cv, ('' if OPCV3 else 'CV_') + 'CAP_PROP_' + property)
 
 
 def get_detection_boxes(boxes, classes, scores, category_index, tresh_level,
-                        max_boxes_to_draw=DETECTION_CONFIG["max_boxes_to_draw"]):
+                        max_boxes_to_draw=DETECTION_CONFIG['max_boxes_to_draw']):
     """
     Returns all the items detected on a frame as dictionary.
     :param boxes:
@@ -189,37 +189,36 @@ def get_detection_boxes(boxes, classes, scores, category_index, tresh_level,
     :param max_boxes_to_draw:
     :return:
     """
-    output = []
+    detections = []
 
-    min_score_thresh = DETECTION_CONFIG["score_treshes"][tresh_level]
+    min_score_thresh = SCORE_TRESH[tresh_level]
 
     if not max_boxes_to_draw:
         max_boxes_to_draw = boxes.shape[0]
 
     for i in range(min(max_boxes_to_draw, boxes.shape[0])):
         if scores is None or scores[i] > min_score_thresh:
-            class_name = "N/A"
+            class_name = 'N/A'
             ymin, xmin, ymax, xmax = boxes[i].tolist()
             confidence = round(scores[i], 2)
-            print(confidence)
 
             if classes[i] in category_index.keys():
-                class_name = category_index[classes[i]]["name"]
+                class_name = category_index[classes[i]]['name']
             class_name = str(class_name)
 
-            output.append(
+            detections.append(
                 {
-                    "class": class_name,
-                    "confidence": confidence,
-                    "box": {
-                        "xmin": xmin,
-                        "ymin": ymin,
-                        "xmax": xmax,
-                        "ymax": ymax
+                    'class': class_name,
+                    'confidence': confidence,
+                    'box': {
+                        'xmin': xmin,
+                        'ymin': ymin,
+                        'xmax': xmax,
+                        'ymax': ymax
                     }
                 }
             )
-    return output
+    return detections
 
 
 def find_latest_checkpoint(dir, prefix):
@@ -230,7 +229,7 @@ def find_latest_checkpoint(dir, prefix):
     :return:
     """
     checkpoints = []
-    regex = r"^" + re.escape(prefix) + r"-(\d{1,}).{0,}|$"
+    regex = r'^' + re.escape(prefix) + r'-(\d{1,}).{0,}|$'
 
     if not os.path.isdir(dir):
         return
@@ -246,7 +245,7 @@ def find_latest_checkpoint(dir, prefix):
     if not checkpoints:
         return
 
-    return os.path.join(dir, "{prefix}-{step}".format(prefix=prefix, step=max(checkpoints)))
+    return os.path.join(dir, '{prefix}-{step}'.format(prefix=prefix, step=max(checkpoints)))
 
 
 def augmentation_router(image_array, augmentations):
@@ -259,54 +258,56 @@ def augmentation_router(image_array, augmentations):
     augmentation_queue = augmentations.split('+')
 
     dict = {
-        "augmentation": augmentations,
-        "image": image_array,
-        "angle": 0
+        'augmentation': augmentations,
+        'image': image_array,
+        'angle': 0,
+        'gamma': 0,
+        'gain': 0
     }
 
     for augmentation in augmentation_queue:
 
-        if augmentation == "random_rotation":
-            dict["image"], dict["angle"] = random_rotation(dict["image"])
+        if augmentation == 'random_rotation':
+            dict['image'], dict['angle'] = random_rotation(dict['image'])
 
-        elif augmentation == "random_pepper":
-            dict["image"] = random_pepper(dict["image"])
+        elif augmentation == 'random_pepper':
+            dict['image'] = random_pepper(dict['image'])
 
-        elif augmentation == "random_salt":
-            dict["image"] = random_salt(dict["image"])
+        elif augmentation == 'random_salt':
+            dict['image'] = random_salt(dict['image'])
 
-        elif augmentation == "random_sp":
-            dict["image"] = random_sp(dict["image"])
+        elif augmentation == 'random_sp':
+            dict['image'] = random_sp(dict['image'])
 
-        elif augmentation == "random_poisson":
-            dict["image"] = random_poisson(dict["image"])
+        elif augmentation == 'random_poisson':
+            dict['image'] = random_poisson(dict['image'])
 
-        elif augmentation == "random_gaussian":
-            dict["image"] = random_gaussian(dict["image"])
+        elif augmentation == 'random_gaussian':
+            dict['image'] = random_gaussian(dict['image'])
 
-        elif augmentation == "horizontal_flip":
-            dict["image"] = horizontal_flip(dict["image"])
+        elif augmentation == 'horizontal_flip':
+            dict['image'] = horizontal_flip(dict['image'])
 
-        elif augmentation == "vertical_flip":
-            dict["image"] = vertical_flip(dict["image"])
+        elif augmentation == 'vertical_flip':
+            dict['image'] = vertical_flip(dict['image'])
 
-        elif augmentation == "double_flip":
-            dict["image"] = double_flip(dict["image"])
+        elif augmentation == 'double_flip':
+            dict['image'] = double_flip(dict['image'])
 
-        elif augmentation == "random_contrast":
-            dict["image"] = random_contrast(dict["image"])
+        elif augmentation == 'random_contrast':
+            dict['image'] = random_contrast(dict['image'])
 
-        elif augmentation == "random_blur":
-            dict["image"] = random_blur(dict["image"])
+        elif augmentation == 'random_blur':
+            dict['image'] = random_blur(dict['image'])
 
-        elif augmentation == "adjust_gamma":
-            dict["image"] = adjust_gamma(dict["image"])
+        elif augmentation == 'adjust_gamma':
+            dict['image'], dict['gain'], dict['gamma'] = adjust_gamma(dict['image'])
 
-        elif augmentation == "adjust_sigmoid":
-            dict["image"] = adjust_sigmoid(dict["image"])
+        elif augmentation == 'adjust_sigmoid':
+            dict['image'] = adjust_sigmoid(dict['image'])
 
-        elif augmentation == "adjust_log":
-            dict["image"] = adjust_log(dict["image"])
+        elif augmentation == 'adjust_log':
+            dict['image'] = adjust_log(dict['image'])
 
     return dict
 
@@ -324,39 +325,39 @@ def calculate_coords(min, max, width, height, dict):
     mini = min
     maxi = max
 
-    augmentation_queue = dict["augmentation"].split("+")
+    augmentation_queue = dict['augmentation'].split('+')
 
     for augmentation in augmentation_queue:
-        if augmentation == "horizontal_flip":
-            mini = {"x": np.abs(mini["x"] - 1), "y": mini["y"]}
-            maxi = {"x": np.abs(maxi["x"] - 1), "y": maxi["y"]}
+        if augmentation == 'horizontal_flip':
+            mini = {'x': np.abs(mini['x'] - 1), 'y': mini['y']}
+            maxi = {'x': np.abs(maxi['x'] - 1), 'y': maxi['y']}
 
-        elif augmentation == "vertical_flip":
-            mini = {"x": mini["x"], "y": np.abs(mini["y"] - 1)}
-            maxi = {"x": maxi["x"], "y": np.abs(maxi["y"] - 1)}
+        elif augmentation == 'vertical_flip':
+            mini = {'x': mini['x'], 'y': np.abs(mini['y'] - 1)}
+            maxi = {'x': maxi['x'], 'y': np.abs(maxi['y'] - 1)}
 
-        elif augmentation == "double_flip":
-            mini = {"x": np.abs(mini["x"] - 1), "y": np.abs(mini["y"] - 1)}
-            maxi = {"x": np.abs(maxi["x"] - 1), "y": np.abs(maxi["y"] - 1)}
+        elif augmentation == 'double_flip':
+            mini = {'x': np.abs(mini['x'] - 1), 'y': np.abs(mini['y'] - 1)}
+            maxi = {'x': np.abs(maxi['x'] - 1), 'y': np.abs(maxi['y'] - 1)}
 
-        elif augmentation == "random_rotation":
+        elif augmentation == 'random_rotation':
             xc, yc = .5 * width, .5 * height
 
             # Calculate original edges.
-            a = {"x": mini["x"] * width, "y": mini["y"] * height}
-            b = {"x": maxi["x"] * width, "y": mini["y"] * height}
-            c = {"x": mini["x"] * width, "y": maxi["y"] * height}
-            d = {"x": maxi["x"] * width, "y": maxi["y"] * height}
+            a = {'x': mini['x'] * width, 'y': mini['y'] * height}
+            b = {'x': maxi['x'] * width, 'y': mini['y'] * height}
+            c = {'x': mini['x'] * width, 'y': maxi['y'] * height}
+            d = {'x': maxi['x'] * width, 'y': maxi['y'] * height}
 
             # Calculate new edges.
-            a = rotate_coords(a, (xc, yc), dict["angle"])
-            b = rotate_coords(b, (xc, yc), dict["angle"])
-            c = rotate_coords(c, (xc, yc), dict["angle"])
-            d = rotate_coords(d, (xc, yc), dict["angle"])
+            a = rotate_coords(a, (xc, yc), dict['angle'])
+            b = rotate_coords(b, (xc, yc), dict['angle'])
+            c = rotate_coords(c, (xc, yc), dict['angle'])
+            d = rotate_coords(d, (xc, yc), dict['angle'])
 
             # Calculate boxe edges.
-            mini = {"x": b["x"] / width, "y": a["y"] / height}
-            maxi = {"x": c["x"] / width, "y": d["y"] / height}
+            mini = {'x': b['x'] / width, 'y': a['y'] / height}
+            maxi = {'x': c['x'] / width, 'y': d['y'] / height}
 
     return check_coords(mini), check_coords(maxi)
 
@@ -367,7 +368,7 @@ def random_rotation(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    random_degree = random.choice(augmentation_config["rotation"])
+    random_degree = random.choice(augmentation_config['rotation'])
     return sk.transform.rotate(image_array, random_degree), random_degree
 
 
@@ -377,7 +378,7 @@ def random_pepper(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.util.random_noise(image_array, mode="pepper")
+    return sk.util.random_noise(image_array, mode='pepper')
 
 
 def random_salt(image_array):
@@ -386,7 +387,7 @@ def random_salt(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.util.random_noise(image_array, mode="salt")
+    return sk.util.random_noise(image_array, mode='salt')
 
 
 def random_sp(image_array):
@@ -395,7 +396,7 @@ def random_sp(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.util.random_noise(image_array, mode="s&p")
+    return sk.util.random_noise(image_array, mode='s&p')
 
 
 def random_poisson(image_array):
@@ -404,7 +405,7 @@ def random_poisson(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.util.random_noise(image_array, mode="poisson")
+    return sk.util.random_noise(image_array, mode='poisson')
 
 
 def random_gaussian(image_array):
@@ -413,7 +414,7 @@ def random_gaussian(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.util.random_noise(image_array, mode="gaussian")
+    return sk.util.random_noise(image_array, mode='gaussian')
 
 
 def horizontal_flip(image_array):
@@ -458,7 +459,7 @@ def adjust_gamma(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    gain, gamma = random.choice(augmentation_config["gain"]), random.choice(augmentation_config["gamma"])
+    gain, gamma = random.choice(augmentation_config['gain']), random.choice(augmentation_config['gamma'])
     return sk.exposure.adjust_gamma(image_array, gamma, gain), gain, gamma
 
 
@@ -486,7 +487,7 @@ def random_blur(image_array):
     :param image_array: input image.
     :return: output image.
     """
-    return sk.filters.gaussian(image_array, sigma=random.choice(augmentation_config["blur"]))
+    return sk.filters.gaussian(image_array, sigma=random.choice(augmentation_config['blur']))
 
 
 def resize_image(image, ratios):
@@ -509,15 +510,18 @@ def image_to_greyscale(image):
     return cv.cvtColor(image, cv.COLOR_RGB2GRAY)
 
 
-def get_date_string(date=datetime.now(), base=DATE_FORMAT):
+def get_current_datetime(tz=TIMEZONE, format=False, pattern=DATE_FORMAT):
     """
-    Returns current datetime as string.
-    :param date:
-    :param base:
-    :return:
+    Returns the current date for the specified timezone and the specified format.
+    :param tz: timezone.
+    :param format: apply a pattern or not.
+    :param pattern: the pattern to apply if format is True.
+    :return: date as string.
     """
-    return base.format(year=date.year, month=date.month, day=date.day, hour=date.hour, minute=date.minute,
-                       second=date.second)
+    if not format:
+        return datetime.now(pytz.timezone(tz))
+
+    return datetime.now(pytz.timezone(tz)).strftime(pattern)
 
 
 def rotate_coords(coords, center, angle):
@@ -532,29 +536,30 @@ def rotate_coords(coords, center, angle):
     angle = np.deg2rad(angle)
 
     return {
-        "x": (coords["x"] - xc) * np.cos(angle) - (coords["y"] - yc) * np.sin(angle) + xc,
-        "y": (coords["x"] - xc) * np.sin(angle) + (coords["y"] - yc) * np.cos(angle) + yc
+        'x': (coords['x'] - xc) * np.cos(angle) - (coords['y'] - yc) * np.sin(angle) + xc,
+        'y': (coords['x'] - xc) * np.sin(angle) + (coords['y'] - yc) * np.cos(angle) + yc
     }
 
 
-def keep_roi(row):
+def ignore_roi(row):
     """
-
-    :param row:
-    :param roi_config:
+    Checks if the ROI is large enough to be kept.
+    :param row: ROI information.
     :return:
     """
-    # Retrieve and round ROI positions.
-    roi_width = row["Xmax"] * row["Width"] - row["Xmin"] * row["Width"]
-    roi_height = row["Ymax"] * row["Height"] - row["Ymin"] * row["Height"]
+    # Unpack image dimensions.
+    width, height = row['Width'], row['Height']
+
+    # Roi dimensions.
+    roi_width = row['Xmax'] * width - row['Xmin'] * width
+    roi_height = row['Ymax'] * height - row['Ymin'] * height
 
     # Read frame ratios.
-    width_ratio, height_ratio = ROI_CONFIG["ratio"]
+    width_ratio, height_ratio = ROI_CONFIG['ratio']
 
-    if roi_width >= width_ratio * ROI_WIDTH or row["Height"] >= roi_height * height_ratio:
-        if not row["Is_depiction"]:
-            return True
-    return False
+    if roi_width >= width_ratio * ROI_WIDTH or roi_height >= height_ratio * ROI_HEIGHT:
+        return False
+    return True
 
 
 def check_coords(coords):
@@ -571,3 +576,51 @@ def check_coords(coords):
         else:
             coords[key] = value
     return coords
+
+
+def find_latest_tfrecord(dir=TFRECORDS_DIR, purpose=TFRECORD_CONFIG['default']):
+    """
+    Returns the latest ID given to the TFRecord files with the specified purpose.
+    :param purpose: TFRecord type.
+    :return: last file ID as int.
+    """
+    max = 0
+    regex = re.escape(purpose) + r'-(\d+).record'
+    files = list_files(dir=dir, extensions='.record')
+
+    for file in files:
+        match = re.match(regex, os.path.basename(file))
+        if match:
+            max = match.group(1) if max < int(match.group(1)) else max
+
+    return max
+
+
+def fix_orientation(img, save_over=True):
+    """
+    Rotates images according to their EXIF orientation tags.
+    :param img: image path or PIL.Image instance.
+    :param save_over: rewrite source image.
+    :return: rotate image.
+    """
+    path = None
+    if not isinstance(img, Image.Image):
+        path = img
+        img = Image.open(path)
+    elif save_over:
+        raise ValueError('The save_over option cannot be applied on Image instance.')
+    try:
+        orientation = img._getexif()[274]
+    except (TypeError, AttributeError, KeyError):
+        return img, 0
+    if orientation in [3, 6, 8]:
+        degrees = ORIENTATIONS_TAG[orientation][1]
+        img = img.transpose(degrees)
+        if save_over and path is not None:
+            try:
+                img.save(path, quality=100, optimize=1)
+            except IOError:
+                img.save(path, quality=100)
+        return img, degrees
+    else:
+        return img, 0
