@@ -17,9 +17,9 @@
 
 import pandas as pd
 
-from sys import platform
 from utils import *
 from config import *
+from sys import platform
 from argparse import ArgumentParser
 
 __description__ = 'Extracts ROIs from CSV files for future trainings.'
@@ -72,8 +72,8 @@ def extract_rois(img_path, rows, roi_config, folder_name):
     :param roi_config: ROI frame properties.
     :return: void.
     """
-    if platform == 'linux':
-        # Fix OS separator that might be wrong on Linux.
+    # Fix OS separator that might be wrong on Linux.
+    if platform == "linux":
         img_path = img_path.replace('\\', os.sep)
 
     if os.path.isfile(img_path):
@@ -89,20 +89,22 @@ def extract_rois(img_path, rows, roi_config, folder_name):
                 rois.append(row)
 
             # Save frame if ROIs matched.
-            if rois:
-                # Generate image name.
-                name = get_roi_name()
+            if not rois:
+                return
 
-                if save_roi(source, name):
-                    # Pick a random purpose.
-                    purpose = random.choice(TFRECORD_CONFIG['weights'])
+            # Generate image name.
+            name = get_roi_name()
 
-                    # Get image dimensions.
-                    height, width, channels = source.shape
+            if save_roi(source, name):
+                # Pick a random purpose.
+                purpose = random.choice(TFRECORD_CONFIG['weights'])
 
-                    # Fill CSV file with ROIs.
-                    for roi in rois:
-                        fill_csv(DATASET_CSV_PATH, CSV_CONFIG, name, width, height, purpose, roi, folder_name)
+                # Get image dimensions.
+                height, width, channels = source.shape
+
+                # Fill CSV file with ROIs.
+                for roi in rois:
+                    fill_csv(DATASET_CSV_PATH, CSV_CONFIG, name, width, height, purpose, roi, folder_name)
         except Exception:
             pass
 
@@ -157,8 +159,9 @@ def fill_csv(csv_path, csv_config, name, width, height, purpose, row, folder_nam
         # Append a new line.
         fw.writerow(
             [name, folder_name, width, height, row['Class'], row['Confidence'], row['Xmin'], row['Ymin'], row['Xmax'],
-             row['Ymax'], row['Is_occluded'], row['Is_truncated'], row['Is_depiction'], 'False', 'False', 'False',
-             str(ignore_roi(row)), '', purpose, get_current_datetime(), '', ''])
+             row['Ymax'], row['Is_occluded'], row['Is_truncated'], row['Is_depiction'], 'False', 'False',
+             str(ignore_roi(row=row, dimensions=(width, height))), 'False', '', purpose, get_current_datetime(), '',
+             ''])
 
 
 def main():

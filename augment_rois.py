@@ -84,6 +84,7 @@ def apply_transformations(df, augmented_df, filename, rows):
                     'Is_depiction': str(row['Is_depiction']),
                     'Is_extracted': 'False',
                     'Is_augmented': 'False',
+                    'Is_ignored': str(row['Is_ignored']),
                     'Is_augmentation': 'True',
                     'Augmentation': dict['augmentation'],
                     'Purpose': purpose,
@@ -139,9 +140,7 @@ def main():
         final_df = pd.concat([df.astype(str), augmented_df], ignore_index=False, sort=True)
 
         # Write re-indexed dataset.
-        write_df_as_csv(df=final_df.reindex(
-            columns=CSV_STRUCTURE['dataset']),
-            path=DATASET_CSV_PATH)
+        write_df_as_csv(df=final_df.reindex(columns=CSV_STRUCTURE['dataset']), path=DATASET_CSV_PATH)
 
     else:
         print('Nothing to augment !')

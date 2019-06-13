@@ -541,14 +541,14 @@ def rotate_coords(coords, center, angle):
     }
 
 
-def ignore_roi(row):
+def ignore_roi(row, dimensions):
     """
     Checks if the ROI is large enough to be kept.
     :param row: ROI information.
     :return:
     """
     # Unpack image dimensions.
-    width, height = row['Width'], row['Height']
+    width, height = dimensions
 
     # Roi dimensions.
     roi_width = row['Xmax'] * width - row['Xmin'] * width

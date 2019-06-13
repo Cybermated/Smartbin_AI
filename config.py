@@ -159,7 +159,7 @@ CSV_CONFIG = {
 ROI_CONFIG = {
     'chars': string.digits + string.ascii_letters,
     'size': 32,
-    'ratio': (2 / 3, 2 / 3),
+    'ratio': (.5, .5),
     'ext': '.jpg',
     'date': True
 }
@@ -167,7 +167,7 @@ ROI_CONFIG = {
 # Items detection settings.
 DETECTION_CONFIG = {
     'num_workers': 4,
-    'queue_size': 12,
+    'queue_size': 8,
     'default_thresh': 'fair',
     'line_thickness': 3,
     'use_normalize_coordinates': True,
@@ -209,9 +209,6 @@ TRAINER_CONFIG = {
 
 # Available augmentations.
 ROI_TRANSFORMATIONS = [
-    'adjust_gamma',
-    'adjust_log',
-    'adjust_sigmoid',
     'random_blur',
     'random_contrast',
     'random_gaussian',
@@ -220,6 +217,9 @@ ROI_TRANSFORMATIONS = [
     'random_salt',
     'random_sp',
 
+    'random_blur',
+    'random_contrast',
+    'random_gaussian',
     'random_pepper',
     'random_poisson',
     'random_salt',
@@ -230,18 +230,6 @@ ROI_TRANSFORMATIONS = [
     'random_rotation',
     'vertical_flip',
 
-    'adjust_gamma+horizontal_flip',
-    'adjust_gamma+vertical_flip',
-    'adjust_gamma+double_flip',
-
-    'adjust_log+horizontal_flip',
-    'adjust_log+vertical_flip',
-    'adjust_log+double_flip',
-
-    'adjust_sigmoid+horizontal_flip',
-    'adjust_sigmoid+vertical_flip',
-    'adjust_sigmoid+double_flip',
-
     'random_blur+horizontal_flip',
     'random_blur+vertical_flip',
     'random_blur+double_flip',
@@ -249,30 +237,37 @@ ROI_TRANSFORMATIONS = [
     'random_blur+horizontal_flip',
     'random_blur+vertical_flip',
     'random_blur+double_flip',
+    'random_blur+random_rotation',
 
     'random_contrast+horizontal_flip',
     'random_contrast+vertical_flip',
     'random_contrast+double_flip',
+    'random_contrast+random_rotation',
 
     'random_gaussian+horizontal_flip',
     'random_gaussian+vertical_flip',
     'random_gaussian+double_flip',
+    'random_gaussian+random_rotation',
 
     'random_pepper+horizontal_flip',
     'random_pepper+vertical_flip',
     'random_pepper+double_flip',
-
-    'random_salt+horizontal_flip',
-    'random_salt+vertical_flip',
-    'random_salt+double_flip',
-
-    'random_sp+horizontal_flip',
-    'random_sp+vertical_flip',
-    'random_sp+double_flip',
+    'random_pepper+random_rotation',
 
     'random_poisson+horizontal_flip',
     'random_poisson+vertical_flip',
     'random_poisson+double_flip'
+    'random_poisson+random_rotation',
+
+    'random_salt+horizontal_flip',
+    'random_salt+vertical_flip',
+    'random_salt+double_flip',
+    'random_salt+random_rotation',
+
+    'random_sp+horizontal_flip',
+    'random_sp+vertical_flip',
+    'random_sp+double_flip'
+    'random_sp+random_rotation'
 ]
 
 # Augmentations randomness settings.
