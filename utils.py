@@ -252,7 +252,7 @@ def augmentation_router(image_array, augmentations):
     """
     Applies the specified augmentation(s).
     :param image_array:
-    :param augmentation:
+    :param augmentations:
     :return:
     """
     augmentation_queue = augmentations.split('+')

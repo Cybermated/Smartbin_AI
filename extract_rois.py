@@ -109,7 +109,7 @@ def extract_rois(img_path, rows, roi_config, folder_name):
             pass
 
 
-def save_roi(roi, roi_name):
+def save_roi(roi, folder_name):
     """
     Saves ROIs to local disk.
     :param roi: source image file.
@@ -117,8 +117,10 @@ def save_roi(roi, roi_name):
     :return: void.
     """
     try:
-        roi_path = get_roi_fullpath(roi_name)
+        # Retrieve ROI fullpath.
+        roi_path = get_roi_fullpath(folder_name)
         if not os.path.isfile(roi_path):
+            # Write
             cv.imwrite(roi_path, image_to_greyscale(roi) if args.greyscale else roi)
             return True
     except Exception:

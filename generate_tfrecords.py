@@ -43,55 +43,46 @@ def create_tfrecords(df, filename, rows):
     classes_id = []
 
     for index, row in rows.iterrows():
+        # Change class name if necessary.
+        row['Class'] = manage_classes(row['Class'])
 
-        # Exclude already extracted ROIs and ROIs without the right purpose.
-        if row['Is_extracted'] or row['Purpose'] != args.record:
-            break
+        # Create a new TFRecord.
+        xmins.append(row['Xmin'])
+        xmaxs.append(row['Xmax'])
+        ymins.append(row['Ymin'])
+        ymaxs.append(row['Ymax'])
+        classes_text.append(row['Class'].encode('utf8'))
+        classes_id.append(class_text_to_int(row['Class'], ROI_CLASSES))
+        counter += 1
 
-        # Exclude depictions.
-        if not row['Is_depiction']:
-            # Change class name if necessary.
-            row['Class'] = manage_classes(row['Class'])
+        # Update ROI extraction status.
+        df.loc[index, 'Extraction_date'] = get_current_datetime()
+        df.loc[index, 'Is_extracted'] = True
 
-            # Create a new TFRecord.
-            xmins.append(row['Xmin'])
-            xmaxs.append(row['Xmax'])
-            ymins.append(row['Ymin'])
-            ymaxs.append(row['Ymax'])
-            classes_text.append(row['Class'].encode('utf8'))
-            classes_id.append(class_text_to_int(row['Class'], ROI_CLASSES))
-            counter += 1
+    # Get file path and extension.
+    file_fullpath = get_roi_fullpath(filename).encode('utf8')
+    image_format = get_file_extension(filename).encode('utf8')
 
-            # Update ROI extraction status.
-            df.loc[index, 'Extraction_date'] = get_current_datetime()
-            df.loc[index, 'Is_extracted'] = True
+    # Read file content.
+    with tf.gfile.GFile(file_fullpath, 'rb') as fid:
+        encoded_file = fid.read()
 
-    if xmins:
-        file_fullpath = get_roi_fullpath(filename).encode('utf8')
-        image_format = get_file_extension(filename).encode('utf8')
-
-        # Read file.
-        with tf.gfile.GFile(file_fullpath, 'rb') as fid:
-            encoded_file = fid.read()
-
-        # Return TFRecord.
-        width, height = int(row['Width']), int(row['Height'])
-        return df, tf.train.Example(features=tf.train.Features(feature={
-            'image/height': dataset_util.int64_feature(width),
-            'image/width': dataset_util.int64_feature(height),
-            'image/filename': dataset_util.bytes_feature(file_fullpath),
-            'image/source_id': dataset_util.bytes_feature(file_fullpath),
-            'image/encoded': dataset_util.bytes_feature(encoded_file),
-            'image/format': dataset_util.bytes_feature(image_format),
-            'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
-            'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
-            'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
-            'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
-            'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
-            'image/object/class/label': dataset_util.int64_list_feature(classes_id)
-        }))
-
-    return df, None
+    # Return TFRecord.
+    width, height = int(row['Width']), int(row['Height'])
+    return df, tf.train.Example(features=tf.train.Features(feature={
+        'image/height': dataset_util.int64_feature(width),
+        'image/width': dataset_util.int64_feature(height),
+        'image/filename': dataset_util.bytes_feature(file_fullpath),
+        'image/source_id': dataset_util.bytes_feature(file_fullpath),
+        'image/encoded': dataset_util.bytes_feature(encoded_file),
+        'image/format': dataset_util.bytes_feature(image_format),
+        'image/object/bbox/xmin': dataset_util.float_list_feature(xmins),
+        'image/object/bbox/xmax': dataset_util.float_list_feature(xmaxs),
+        'image/object/bbox/ymin': dataset_util.float_list_feature(ymins),
+        'image/object/bbox/ymax': dataset_util.float_list_feature(ymaxs),
+        'image/object/class/text': dataset_util.bytes_list_feature(classes_text),
+        'image/object/class/label': dataset_util.int64_list_feature(classes_id)
+    }))
 
 
 def main(_):
@@ -108,8 +99,9 @@ def main(_):
         print('Error while reading CSV file {csv} : {error}.'.format(csv=DATASET_CSV_PATH, error=ee))
         raise ()
 
-    # Drop extracted and ignored rows.
-    indexes = list(set(df[df['Is_extracted'] == True].index) | set(df[df['Is_ignored'] == True].index))
+    # Drop extracted, ignored and bad rows.
+    indexes = list(set(df[df['Is_extracted'] == True].index) | set(df[df['Is_ignored'] == True].index) | set(
+        df[df['Purpose'] != args.record].index))
     cropped_df = df.drop(indexes, inplace=False)
 
     # Get dataframe dimensions.

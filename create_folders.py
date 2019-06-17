@@ -68,7 +68,7 @@ def copy_file(file_path, dir_dict):
     """
     try:
         name = random_name(use_date=False, chars=FRAME_CONFIG['chars'], size=FRAME_CONFIG['size'])
-        cp(file_path, os.path.join(dir_dict['img_path'], ))
+        cp(file_path, os.path.join(dir_dict['img_path'], name))
         dir_dict['content'].append(os.path.basename(file_path))
         if args.delete:
             try:
@@ -151,7 +151,7 @@ def main():
             curr_folder = create_dir(
                 parent_dir=FOLDERS_DIR,
                 img_dir=FOLDER_CONFIG['img_dir'],
-                chars=['chars'],
+                chars=FOLDER_CONFIG['chars'],
                 size=FOLDER_CONFIG['size']
             )
             print('Generating folder {folder}...'.format(folder=curr_folder['name']))
