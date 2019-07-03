@@ -14,6 +14,7 @@ import tensorflow as tf
 from utils import *
 from config import *
 from argparse import ArgumentParser
+from tfrecord_utils import RotatingRecord
 from object_detection.utils import dataset_util
 
 __description__ = 'Generates TFRecords for future trainings.'
@@ -109,24 +110,25 @@ def main(_):
 
     # Check if file is not empty.
     if rows and cols:
-
         # Group ROIs by filename.
         grouped_df = group_dataframe(cropped_df, 'Filename')
 
-        # Generate the record name.
-        filename = TFRECORD_CONFIG[args.record].format(id=find_latest_tfrecord(purpose=args.record) + 1)
-
-        # Init an empty record file.
-        writer = tf.python_io.TFRecordWriter(os.path.join(TFRECORDS_DIR, filename))
+        # Instantiate record rotation.
+        tfrecord_rotation = RotatingRecord(
+            directory=TFRECORDS_DIR,
+            last=find_latest_tfrecord(purpose=args.record),
+            purpose=args.record,
+            max_file_size=TFRECORD_CONFIG['max_size'],
+        )
 
         # Read each ROI group.
         for filename, rows in grouped_df:
+            # Generate TFRecord file.
             df, tfrecord = create_tfrecords(df, filename, rows)
-            if tfrecord is not None:
-                writer.write(tfrecord.SerializeToString())
+            tfrecord_rotation.write(tfrecord)
 
-        # Close record file.
-        writer.close()
+        # Close last file.
+        tfrecord_rotation.close()
 
         # Save dataset.
         df.to_csv(DATASET_CSV_PATH, mode='w', header=True, index=False, quoting=CSV_CONFIG['quoting'],

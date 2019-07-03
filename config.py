@@ -168,7 +168,7 @@ ROI_CONFIG = {
 DETECTION_CONFIG = {
     'num_workers': 4,
     'queue_size': 8,
-    'default_thresh': 'fair',
+    'default_thresh': 'medium',
     'line_thickness': 3,
     'use_normalize_coordinates': True,
     'max_boxes_to_draw': 8,
@@ -179,6 +179,7 @@ DETECTION_CONFIG = {
 
 # TFRecords settings.
 TFRECORD_CONFIG = {
+    'max_size': 250000000,  # 250MB
     'default': 'train',
     'train': 'train-{id}.record',
     'test': 'test-{id}.record',
