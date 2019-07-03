@@ -48,14 +48,14 @@ def apply_transformations(df, augmented_df, filename, rows):
 
         # Ignore low-contrasted images.
         if sk.exposure.is_low_contrast(dict['image']):
-            break
+            continue
 
         try:
             # Save new image to disk.
             name = random_name(chars=ROI_CONFIG['chars'], size=ROI_CONFIG['size'], use_date=True) + ROI_CONFIG['ext']
             io.imsave(get_roi_fullpath(name), dict['image'])
         except Exception:
-            break
+            continue
 
         # Pick a random purpose.
         purpose = random.choice(TFRECORD_CONFIG['weights'])
@@ -84,6 +84,7 @@ def apply_transformations(df, augmented_df, filename, rows):
                     'Is_depiction': str(row['Is_depiction']),
                     'Is_extracted': 'False',
                     'Is_augmented': 'False',
+                    'Is_ignored': str(row['Is_ignored']),
                     'Is_augmentation': 'True',
                     'Augmentation': dict['augmentation'],
                     'Purpose': purpose,
@@ -105,12 +106,12 @@ def main():
     # Load the dataset CSV file.
     try:
         df = pd.read_csv(DATASET_CSV_PATH)
-    except Exception:
-        return
+    except Exception as ee:
+        raise ee
 
-    # Drop augmented, depictions and ignored rows.
-    indexes = list(set(df[df['Is_augmented'] == True].index) | set(df[df['Augmentation'] == ''].index) | set(
-        df[df['Is_depiction'] == True].index) | set(df[df['Is_ignored'] == True].index))
+    # Drop augmented and ignored rows.
+    indexes = list(set(df[df['Is_augmented'] == True].index) | set(df[df['Is_augmentation'] == True].index) | set(
+        df[df['Is_ignored'] == True].index))
     cropped_df = df.drop(indexes, inplace=False)
 
     # Get dataframe dimensions.
@@ -122,15 +123,11 @@ def main():
         # Group ROIs by filename.
         grouped_df = group_dataframe(cropped_df, 'Filename')
 
-        print('{count} augmentations are enabled, expecting {images} new images.'.format(
-            count=len(ROI_TRANSFORMATIONS), images=len(ROI_TRANSFORMATIONS) * len(grouped_df)))
-
         # Init valid record counter and dataset.
         augmented_df = pd.DataFrame()
 
         # Read each ROI line.
         for filename, rows in grouped_df:
-            print('Augmenting image {filename}...'.format(filename=filename))
 
             # Apply augmentations.
             df, augmented_df = apply_transformations(df, augmented_df, filename, rows)
@@ -139,9 +136,7 @@ def main():
         final_df = pd.concat([df.astype(str), augmented_df], ignore_index=False, sort=True)
 
         # Write re-indexed dataset.
-        write_df_as_csv(df=final_df.reindex(
-            columns=CSV_STRUCTURE['dataset']),
-            path=DATASET_CSV_PATH)
+        write_df_as_csv(df=final_df.reindex(columns=CSV_STRUCTURE['dataset']), path=DATASET_CSV_PATH)
 
     else:
         print('Nothing to augment !')

@@ -1,0 +1,78 @@
+#! /usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""
+    TFRecord utils file.
+    ======================
+    Collection of useful functions for TFRecords generation.
+"""
+
+from utils import *
+import tensorflow as tf
+
+
+class RotatingRecord(object):
+    """
+    Class to write TFRecord files that don't exceed a certain size to make trainings more efficient.
+    See https://www.tensorflow.org/guide/performance/overview
+    """
+
+    def __init__(self, directory, last, purpose, max_file_size):
+        """
+        Initializes file rotation.
+        :param directory: file path.
+        :param last: last file ID.
+        :param purpose: record type.
+        :param max_file_size: maximum allowed file size (bytes).
+        """
+        self.directory = directory
+        self.purpose = purpose
+        self.max_file_size = max_file_size
+        self.ii = int(last) + 1
+        self.writer = None
+        self.open()
+        self.is_empty = True
+
+    def rotate(self):
+        """
+        Checks if current file reached the maximum size and opens a new one if necessary.
+        :return: void.
+        """
+        if not self.is_empty:
+            if os.stat(self.filename_template).st_size > self.max_file_size:
+                self.close()
+                self.ii += 1
+                self.open()
+
+    def open(self):
+        """
+        Creates new empty file.
+        :return: void.
+        """
+        self.writer = tf.python_io.TFRecordWriter(self.filename_template)
+        self.is_empty = True
+
+    def write(self, record):
+        """
+        Appends content in current file.
+        :param record: TFRecord entry.
+        :return: void.
+        """
+        self.rotate()
+        self.writer.write(record.SerializeToString())
+        self.is_empty = False
+
+    def close(self):
+        """
+        Freezes current file.
+        :return: void.
+        """
+        self.writer.close()
+
+    @property
+    def filename_template(self):
+        """
+        Returns current file name.
+        :return: filename as string.
+        """
+        return os.path.join(self.directory, TFRECORD_CONFIG[self.purpose].format(id=self.ii))

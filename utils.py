@@ -252,7 +252,7 @@ def augmentation_router(image_array, augmentations):
     """
     Applies the specified augmentation(s).
     :param image_array:
-    :param augmentation:
+    :param augmentations:
     :return:
     """
     augmentation_queue = augmentations.split('+')
@@ -541,14 +541,14 @@ def rotate_coords(coords, center, angle):
     }
 
 
-def ignore_roi(row):
+def ignore_roi(row, dimensions):
     """
     Checks if the ROI is large enough to be kept.
     :param row: ROI information.
     :return:
     """
     # Unpack image dimensions.
-    width, height = row['Width'], row['Height']
+    width, height = dimensions
 
     # Roi dimensions.
     roi_width = row['Xmax'] * width - row['Xmin'] * width
