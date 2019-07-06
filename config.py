@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -203,7 +202,7 @@ TRAINER_CONFIG = {
     'resume_from_ckpt': True,
     'hparams_override': None,
     'run_once': False,
-    'num_train_steps': 200000,
+    'num_train_steps': 500000,
     'sample_1_of_n_eval_examples': 5,
     'sample_1_of_n_eval_on_train_example': 1
 }
@@ -217,58 +216,57 @@ ROI_TRANSFORMATIONS = [
     'random_poisson',
     'random_salt',
     'random_sp',
-
+    #
     'random_blur',
-    'random_contrast',
+    # 'random_contrast',
     'random_gaussian',
     'random_pepper',
     'random_poisson',
-    'random_salt',
+    # 'random_salt',
     'random_sp',
-
+    #
     'double_flip',
     'horizontal_flip',
-    'random_rotation',
+    # 'random_rotation',
     'vertical_flip',
-
+    #
+    # 'random_blur+vertical_flip',
+    # 'random_blur+double_flip',
+    #
     'random_blur+horizontal_flip',
     'random_blur+vertical_flip',
-    'random_blur+double_flip',
-
-    'random_blur+horizontal_flip',
-    'random_blur+vertical_flip',
-    'random_blur+double_flip',
-    'random_blur+random_rotation',
-
+    # 'random_blur+double_flip',
+    # 'random_blur+random_rotation',
+    #
     'random_contrast+horizontal_flip',
     'random_contrast+vertical_flip',
-    'random_contrast+double_flip',
-    'random_contrast+random_rotation',
-
+    # 'random_contrast+double_flip',
+    # 'random_contrast+random_rotation',
+    #
     'random_gaussian+horizontal_flip',
     'random_gaussian+vertical_flip',
-    'random_gaussian+double_flip',
-    'random_gaussian+random_rotation',
-
+    # 'random_gaussian+double_flip',
+    # 'random_gaussian+random_rotation',
+    #
     'random_pepper+horizontal_flip',
     'random_pepper+vertical_flip',
-    'random_pepper+double_flip',
-    'random_pepper+random_rotation',
-
+    # 'random_pepper+double_flip',
+    # 'random_pepper+random_rotation',
+    #
     'random_poisson+horizontal_flip',
     'random_poisson+vertical_flip',
-    'random_poisson+double_flip'
-    'random_poisson+random_rotation',
-
+    # 'random_poisson+double_flip'
+    # 'random_poisson+random_rotation',
+    #
     'random_salt+horizontal_flip',
     'random_salt+vertical_flip',
-    'random_salt+double_flip',
-    'random_salt+random_rotation',
-
+    # 'random_salt+double_flip',
+    # 'random_salt+random_rotation',
+    #
     'random_sp+horizontal_flip',
     'random_sp+vertical_flip',
-    'random_sp+double_flip'
-    'random_sp+random_rotation'
+    # 'random_sp+double_flip'
+    # 'random_sp+random_rotation'
 ]
 
 # Augmentations randomness settings.
