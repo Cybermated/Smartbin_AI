@@ -1,4 +1,3 @@
-#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -31,18 +30,20 @@ class RotatingRecord(object):
         self.ii = int(last) + 1
         self.writer = None
         self.open()
-        self.is_empty = True
 
     def rotate(self):
         """
         Checks if current file reached the maximum size and opens a new one if necessary.
         :return: void.
         """
-        if not self.is_empty:
+        # File might be not on disk yet.
+        try:
             if os.stat(self.filename_template).st_size > self.max_file_size:
                 self.close()
                 self.ii += 1
                 self.open()
+        except:
+            pass
 
     def open(self):
         """
@@ -50,7 +51,6 @@ class RotatingRecord(object):
         :return: void.
         """
         self.writer = tf.python_io.TFRecordWriter(self.filename_template)
-        self.is_empty = True
 
     def write(self, record):
         """
@@ -60,7 +60,6 @@ class RotatingRecord(object):
         """
         self.rotate()
         self.writer.write(record.SerializeToString())
-        self.is_empty = False
 
     def close(self):
         """

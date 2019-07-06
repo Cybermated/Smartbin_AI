@@ -120,12 +120,12 @@ def save_roi(roi, folder_name):
         # Retrieve ROI fullpath.
         roi_path = get_roi_fullpath(folder_name)
         if not os.path.isfile(roi_path):
-            # Write
             cv.imwrite(roi_path, image_to_greyscale(roi) if args.greyscale else roi)
             return True
+        else:
+            return False
     except Exception:
-        pass
-    return False
+        return False
 
 
 def generate_csv(csv_path, csv_config):

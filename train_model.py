@@ -14,7 +14,6 @@ import tensorflow as tf
 
 sys.path.append("models/research/slim")
 
-from utils import *
 from config import *
 from argparse import ArgumentParser
 from object_detection import model_lib
