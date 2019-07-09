@@ -25,7 +25,7 @@ from config import *
 from argparse import ArgumentParser
 from multiprocessing import Queue, Pool
 from object_detection.utils import label_map_util
-from utils.cam_utils import FPS, WebcamVideoStream
+from cam_utils import FPS, WebcamVideoStream
 from object_detection.utils import visualization_utils as vis_util
 
 __description__ = "Retrieves videostream and shows detected items."
