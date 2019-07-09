@@ -178,7 +178,8 @@ DETECTION_CONFIG = {
 
 # TFRecords settings.
 TFRECORD_CONFIG = {
-    'max_size': 250000000,  # 250MB
+    # According to TensorFlow it's better to use small TFRecords files (~100MB).
+    'max_size': 102400000,
     'default': 'train',
     'train': 'train-{id}.record',
     'test': 'test-{id}.record',
@@ -196,14 +197,23 @@ LABELMAP_CONFIG = {
 
 # Model trainer settings.
 TRAINER_CONFIG = {
+    # Path to output model directory where event and checkpoint files will be written.
     'checkpoints_dir': CHECKPOINTS_DIR,
+    # Path to pipeline config file.
     'pipeline_config_path': os.path.join(TRAINING_CONFIG_DIR, 'smartbin_pipeline.config'),
+    # Test dataset against training data.
     'eval_training_data': False,
+    # If previous checkpoints are found, start from the latest one.
     'resume_from_ckpt': True,
+    # Override advanced parameters.
     'hparams_override': None,
+    # If running in eval-only mode, whether to run just one round of eval vs running continuously.
     'run_once': False,
-    'num_train_steps': 500000,
-    'sample_1_of_n_eval_examples': 5,
+    # Number of train steps.
+    'num_train_steps': 200000,
+    # Sample one of every n eval input examples, where n is provided.
+    'sample_1_of_n_eval_examples': 1,
+    # Sample one of every n train input examples for evaluation, where n is provided.
     'sample_1_of_n_eval_on_train_example': 1
 }
 
