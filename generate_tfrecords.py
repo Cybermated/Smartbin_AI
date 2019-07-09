@@ -14,7 +14,7 @@ import tensorflow as tf
 from utils import *
 from config import *
 from argparse import ArgumentParser
-from utils.tfrecord_utils import RotatingRecord
+from tfrecord_utils import RotatingRecord
 from object_detection.utils import dataset_util
 
 __description__ = 'Generates TFRecords for future trainings.'
