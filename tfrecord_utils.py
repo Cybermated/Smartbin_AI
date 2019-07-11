@@ -24,11 +24,12 @@ class RotatingRecord(object):
         :param purpose: record type.
         :param max_file_size: maximum allowed file size (bytes).
         """
-        self.directory = directory
         self.purpose = purpose
+        self.directory = os.path.join(directory, self.purpose)
         self.max_file_size = max_file_size
         self.ii = int(last) + 1
         self.writer = None
+        self.check_path()
         self.open()
 
     def rotate(self):
@@ -67,6 +68,14 @@ class RotatingRecord(object):
         :return: void.
         """
         self.writer.close()
+
+    def check_path(self):
+        """
+        Checks output directory.
+        :return: void.
+        """
+        if not os.path.isdir(self.directory):
+            os.makedirs(self.directory)
 
     @property
     def filename_template(self):

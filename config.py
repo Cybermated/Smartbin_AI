@@ -212,76 +212,79 @@ TRAINER_CONFIG = {
     # Number of train steps.
     'num_train_steps': 200000,
     # Sample one of every n eval input examples, where n is provided.
-    'sample_1_of_n_eval_examples': 1,
+    'sample_1_of_n_eval_examples': 5,
     # Sample one of every n train input examples for evaluation, where n is provided.
     'sample_1_of_n_eval_on_train_example': 1
 }
 
 # Available augmentations.
 ROI_TRANSFORMATIONS = [
-    'random_blur',
+    # 'random_blur',
     'random_contrast',
-    'random_gaussian',
-    'random_pepper',
-    'random_poisson',
-    'random_salt',
-    'random_sp',
+    # 'random_gaussian',
+    # 'random_pepper',
+    # 'random_poisson',
+    # 'random_salt',
+    # 'random_sp',
     #
     'random_blur',
-    # 'random_contrast',
-    'random_gaussian',
-    'random_pepper',
-    'random_poisson',
-    # 'random_salt',
-    'random_sp',
+    # 'random_blur',
+    'random_contrast',
+    'random_contrast',
+    # 'random_gaussian',
+    # 'random_gaussian',
+    # 'random_pepper',
+    # 'random_poisson',
+    'random_salt',
+    # 'random_sp',
     #
     'double_flip',
     'horizontal_flip',
     # 'random_rotation',
     'vertical_flip',
     #
-    # 'random_blur+vertical_flip',
-    # 'random_blur+double_flip',
+    'random_blur+vertical_flip',
+    'random_blur+double_flip',
     #
     'random_blur+horizontal_flip',
     'random_blur+vertical_flip',
-    # 'random_blur+double_flip',
+    'random_blur+double_flip',
     # 'random_blur+random_rotation',
     #
     'random_contrast+horizontal_flip',
     'random_contrast+vertical_flip',
-    # 'random_contrast+double_flip',
+    'random_contrast+double_flip',
     # 'random_contrast+random_rotation',
     #
-    'random_gaussian+horizontal_flip',
-    'random_gaussian+vertical_flip',
+    # 'random_gaussian+horizontal_flip',
+    # 'random_gaussian+vertical_flip',
     # 'random_gaussian+double_flip',
     # 'random_gaussian+random_rotation',
     #
-    'random_pepper+horizontal_flip',
-    'random_pepper+vertical_flip',
+    # 'random_pepper+horizontal_flip',
+    # 'random_pepper+vertical_flip',
     # 'random_pepper+double_flip',
     # 'random_pepper+random_rotation',
     #
     'random_poisson+horizontal_flip',
     'random_poisson+vertical_flip',
-    # 'random_poisson+double_flip'
+    'random_poisson+double_flip'
     # 'random_poisson+random_rotation',
     #
-    'random_salt+horizontal_flip',
-    'random_salt+vertical_flip',
+    # 'random_salt+horizontal_flip',
+    # 'random_salt+vertical_flip',
     # 'random_salt+double_flip',
     # 'random_salt+random_rotation',
     #
-    'random_sp+horizontal_flip',
-    'random_sp+vertical_flip',
+    # 'random_sp+horizontal_flip',
+    # 'random_sp+vertical_flip',
     # 'random_sp+double_flip'
     # 'random_sp+random_rotation'
 ]
 
 # Augmentations randomness settings.
 TRANSFORMATION_CONFIG = {
-    'blur': [x for x in range(1, 4)],
+    'blur': [x for x in range(1, 5)],
     'rotation': [x for x in range(1, 11)],
     'gain': [x / 100 for x in range(50, 151, 10) if x != 100],
     'gamma': [x / 100 for x in range(50, 151, 10) if x != 100]
