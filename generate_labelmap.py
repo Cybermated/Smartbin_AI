@@ -42,7 +42,7 @@ def main():
     Main program.
     :return: void.
     """
-    labelmap_path = os.path.join(LABELMAP_CONFIG['path'], LABELMAP_CONFIG['filename'] + LABELMAP_CONFIG['ext'])
+    labelmap_path = os.path.join(LABELMAP_CONFIG['path'], LABELMAP_FILE)
     try:
         # Remove the existing labelmap file.
         if os.path.isfile(labelmap_path):
@@ -50,6 +50,7 @@ def main():
             os.remove(labelmap_path)
     except Exception as ee:
         print('Error while deleting previous file : {error}.'.format(error=ee))
+        exit()
 
     with open(labelmap_path, 'w+') as labelmap_file:
         for roi_class in ROI_CLASSES:

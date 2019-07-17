@@ -102,7 +102,7 @@ def main(_):
 
     # Drop extracted, ignored and bad rows.
     indexes = list(set(df[df['Is_extracted'] == True].index) | set(df[df['Is_ignored'] == True].index) | set(
-        df[df['Purpose'] != args.record].index))
+        df[df['Purpose'] != args.record].index) | set(df[df['Class'] not in ROI_CLASSES].index))
     cropped_df = df.drop(indexes, inplace=False)
 
     # Get dataframe dimensions.

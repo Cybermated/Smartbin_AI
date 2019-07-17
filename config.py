@@ -28,12 +28,26 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 IMG_EXT = ('jpg', 'png', 'jpeg', 'bmp')
 VIDEO_EXT = ('mp4', 'avi', 'mkv')
 
-ROI_CLASSES = ['battery', 'can', 'carton_packaging', 'glass_bottle', 'glass_container', 'plastic_bottle',
-               'plastic_container', 'goblet']
+ROI_CLASSES = [
+    # 'battery',
+    'can',
+    'carton_packaging',
+    'glass_bottle',
+    'glass_container',
+    'plastic_bottle',
+    'plastic_container',
+    # 'goblet'
+]
 
 # Project directories.
 PRETRAINING_DIR = os.path.join('pretraining')
 TRAINING_DIR = os.path.join('training')
+
+# Project filenames.
+DATASET_FILE = 'dataset.csv'
+INFERENCE_GRAPH_FILE = 'frozen_inference_graph.pb'
+LABELMAP_FILE = 'smartbin_labelmap.pbtxt'
+PIPELINE_FILE = 'smartbin_pipeline.config'
 
 # Pre-training directories and paths.
 RAW_IMAGES_DIR = os.path.join(PRETRAINING_DIR, 'raw_images')
@@ -43,7 +57,7 @@ FINAL_FOLDERS_DIR = os.path.join(PRETRAINING_DIR, 'annotations', 'folders')
 FOLDERS_DIR = os.path.join(PRETRAINING_DIR, 'folders')
 ROIS_DIR = os.path.join(PRETRAINING_DIR, 'dataset')
 ROIS_PATH = os.path.join(ROIS_DIR, 'images')
-DATASET_CSV_PATH = os.path.join(ROIS_DIR, 'dataset.csv')
+DATASET_CSV_PATH = os.path.join(ROIS_DIR, DATASET_FILE)
 
 # Training directories and paths.
 TFRECORDS_DIR = os.path.join(TRAINING_DIR, 'tfrecords')
@@ -51,7 +65,10 @@ TRAINING_CONFIG_DIR = os.path.join(TRAINING_DIR, 'config')
 TUNE_CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, 'tune_checkpoints')
 CHECKPOINTS_DIR = os.path.join(TRAINING_DIR, 'checkpoints')
 OUTPUTS_DIR = os.path.join(TRAINING_DIR, 'outputs')
-FROZEN_MODEL_PATH = os.path.join(OUTPUTS_DIR, 'frozen_inference_graph.pb')
+FROZEN_MODEL_PATH = os.path.join(OUTPUTS_DIR, INFERENCE_GRAPH_FILE)
+PIPELINE_CONFIG_PATH = os.path.join(TRAINING_CONFIG_DIR, PIPELINE_FILE)
+LABELMAP_PATH = os.path.join(TRAINING_CONFIG_DIR, LABELMAP_FILE)
+INFERENCE_GRAPH_PATH = os.path.join(OUTPUTS_DIR, INFERENCE_GRAPH_FILE)
 
 # Time configuration.
 TIMEZONE = 'Europe/Paris'
@@ -145,7 +162,7 @@ FOLDER_CONFIG = {
 # Annotation CSV settings.
 CSV_CONFIG = {
     'name_pattern': 'roi_{folder}.csv',
-    'name_pattern_ai': 'roi_{folder}-AI_{level}',
+    'name_pattern_ai': 'roi_{folder}_AI-{level}',
     'suffix': '_extracted',
     'delimiter': ',',
     'quotechar': '|',
@@ -158,22 +175,28 @@ CSV_CONFIG = {
 ROI_CONFIG = {
     'chars': string.digits + string.ascii_letters,
     'size': 32,
-    'ratio': (.5, .5),
+    # Width/Height ratio of the ROI size that the ROI must reach to be kept.
+    'ratio': (.6, .6),
     'ext': '.jpg',
-    'date': True
+    'date': True,
+    'greyscale': False,
+    'ignore_size': False
 }
 
 # Items detection settings.
 DETECTION_CONFIG = {
     'num_workers': 4,
     'queue_size': 8,
-    'default_thresh': 'medium',
+    # Minimum confidence to display a box.
+    'default_thresh': 'high',
+    # Line thickness.
     'line_thickness': 3,
     'use_normalize_coordinates': True,
+    # Maximum boxes to display at a time.
     'max_boxes_to_draw': 8,
     'num_classes': len(ROI_CLASSES),
-    'model_dir': os.path.join(OUTPUTS_DIR, 'frozen_inference_graph.pb'),
-    'labelmap_path': os.path.join(TRAINING_CONFIG_DIR, 'smartbin_labelmap.pbtxt')
+    'model_dir': INFERENCE_GRAPH_PATH,
+    'labelmap_path': LABELMAP_PATH
 }
 
 # TFRecords settings.
@@ -189,9 +212,6 @@ TFRECORD_CONFIG = {
 # Labelmap file settings.
 LABELMAP_CONFIG = {
     'start': 1,
-    'path': TRAINING_CONFIG_DIR,
-    'filename': 'smartbin_labelmap',
-    'ext': '.pbtxt',
     'delete': True
 }
 
@@ -200,7 +220,7 @@ TRAINER_CONFIG = {
     # Path to output model directory where event and checkpoint files will be written.
     'checkpoints_dir': CHECKPOINTS_DIR,
     # Path to pipeline config file.
-    'pipeline_config_path': os.path.join(TRAINING_CONFIG_DIR, 'smartbin_pipeline.config'),
+    'pipeline_config_path': PIPELINE_CONFIG_PATH,
     # Test dataset against training data.
     'eval_training_data': False,
     # If previous checkpoints are found, start from the latest one.
@@ -219,73 +239,39 @@ TRAINER_CONFIG = {
 
 # Available augmentations.
 ROI_TRANSFORMATIONS = [
-    # 'random_blur',
     'random_contrast',
-    # 'random_gaussian',
-    # 'random_pepper',
-    # 'random_poisson',
-    # 'random_salt',
-    # 'random_sp',
-    #
     'random_blur',
-    # 'random_blur',
-    'random_contrast',
-    'random_contrast',
-    # 'random_gaussian',
-    # 'random_gaussian',
-    # 'random_pepper',
-    # 'random_poisson',
-    'random_salt',
-    # 'random_sp',
-    #
-    'double_flip',
+    'random_poisson',
+    'random_gaussian'
+
     'horizontal_flip',
-    # 'random_rotation',
     'vertical_flip',
-    #
-    'random_blur+vertical_flip',
-    'random_blur+double_flip',
-    #
-    'random_blur+horizontal_flip',
-    'random_blur+vertical_flip',
-    'random_blur+double_flip',
-    # 'random_blur+random_rotation',
-    #
+    'double_flip',
+
     'random_contrast+horizontal_flip',
     'random_contrast+vertical_flip',
     'random_contrast+double_flip',
-    # 'random_contrast+random_rotation',
-    #
-    # 'random_gaussian+horizontal_flip',
-    # 'random_gaussian+vertical_flip',
-    # 'random_gaussian+double_flip',
-    # 'random_gaussian+random_rotation',
-    #
-    # 'random_pepper+horizontal_flip',
-    # 'random_pepper+vertical_flip',
-    # 'random_pepper+double_flip',
-    # 'random_pepper+random_rotation',
-    #
+
+    'random_blur+horizontal_flip',
+    'random_blur+vertical_flip',
+    'random_blur+double_flip',
+
+    'random_rescale',
+
+    'random_rescale+horizontal_flip',
+    'random_rescale+vertical_flip',
+    'random_rescale+double_flip',
+
     'random_poisson+horizontal_flip',
     'random_poisson+vertical_flip',
     'random_poisson+double_flip'
-    # 'random_poisson+random_rotation',
-    #
-    # 'random_salt+horizontal_flip',
-    # 'random_salt+vertical_flip',
-    # 'random_salt+double_flip',
-    # 'random_salt+random_rotation',
-    #
-    # 'random_sp+horizontal_flip',
-    # 'random_sp+vertical_flip',
-    # 'random_sp+double_flip'
-    # 'random_sp+random_rotation'
 ]
 
 # Augmentations randomness settings.
 TRANSFORMATION_CONFIG = {
-    'blur': [x for x in range(1, 5)],
+    'blur': [x for x in range(1, 4)],
     'rotation': [x for x in range(1, 11)],
     'gain': [x / 100 for x in range(50, 151, 10) if x != 100],
-    'gamma': [x / 100 for x in range(50, 151, 10) if x != 100]
+    'gamma': [x / 100 for x in range(50, 151, 10) if x != 100],
+    'rescale': [x / 100 for x in range(15, 51)]
 }

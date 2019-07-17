@@ -259,6 +259,7 @@ def augmentation_router(image_array, augmentations):
     dict = {
         'augmentation': augmentations,
         'image': image_array,
+        'rescale': 1,
         'angle': 0,
         'gamma': 0,
         'gain': 0
@@ -307,6 +308,9 @@ def augmentation_router(image_array, augmentations):
 
         elif augmentation == 'adjust_log':
             dict['image'] = adjust_log(dict['image'])
+
+        elif augmentation == 'random_rescale':
+            dict['image'], dict['rescale'] = random_rescale(dict['image'])
 
     return dict
 
@@ -500,6 +504,16 @@ def resize_image(image, ratios):
     return cv.resize(image, None, fx=width, fy=height)
 
 
+def random_rescale(image_array):
+    """
+    Performs rescale on the input image.
+    :param image_array: input image.
+    :return: output image.
+    """
+    reduction = random.choice(augmentation_config['rescale'])
+    return transform.rescale(image=image_array, scale=reduction, anti_aliasing=True), reduction
+
+
 def image_to_greyscale(image):
     """
     Converts an image in greyscale.
@@ -544,6 +558,7 @@ def ignore_roi(row, dimensions):
     """
     Checks if the ROI is large enough to be kept.
     :param row: ROI information.
+    :param dimensions: image size (tuple).
     :return:
     """
     # Unpack image dimensions.

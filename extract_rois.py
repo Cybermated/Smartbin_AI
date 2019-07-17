@@ -26,11 +26,11 @@ __description__ = 'Extracts ROIs from CSV files for future trainings.'
 
 # Parse args.
 parser = ArgumentParser(description=__description__)
-parser.add_argument('--greyscale', type=bool, default=True,
-                    help='Extract images as greyscale, default is {default}.'.format(default=True))
-parser.add_argument('--ignore-size', type=bool, default=True,
+parser.add_argument('--greyscale', type=bool, default=ROI_CONFIG['greyscale'],
+                    help='Extract images as greyscale, default is {default}.'.format(default=ROI_CONFIG['greyscale']))
+parser.add_argument('--ignore-size', type=bool, default=ROI_CONFIG['ignore_size'],
                     help='Keep small ROIs, default is {default}.'.format(
-                        default=True))
+                        default=ROI_CONFIG['ignore_size']))
 args = parser.parse_args()
 
 
@@ -58,18 +58,18 @@ def get_rois(csv, csv_config):
 
     # Extract ROIs from each group.
     for group in grouped_df:
-        extract_rois(os.path.join(img_location, group.Path), group.object, ROI_CONFIG, folder_name)
+        extract_rois(os.path.join(img_location, group.Path), group.object, folder_name)
 
     # Rename CSV file.
     add_suffix(csv, CSV_CONFIG['suffix'])
 
 
-def extract_rois(img_path, rows, roi_config, folder_name):
+def extract_rois(img_path, rows, folder_name):
     """
     Extract ROIs from frames to save them to local disk.
-    :param img_path: frame path..
+    :param img_path: frame path.
     :param rows: ROI properties.
-    :param roi_config: ROI frame properties.
+    :param folder_name: folder name.
     :return: void.
     """
     # Fix OS separator that might be wrong on Linux.
@@ -155,6 +155,9 @@ def fill_csv(csv_path, csv_config, name, width, height, purpose, row, folder_nam
     :param folder_name:
     :return:
     """
+
+    is_ignored = str(ignore_roi(row=row, dimensions=(width, height))) if not args.ignore_size else 'False'
+
     with open(csv_path, 'a', newline=csv_config['newline']) as csv_file:
         fw = csv.writer(csv_file, delimiter=csv_config['delimiter'], quotechar=csv_config['quotechar'],
                         quoting=csv_config['quoting'])
@@ -162,8 +165,7 @@ def fill_csv(csv_path, csv_config, name, width, height, purpose, row, folder_nam
         fw.writerow(
             [name, folder_name, width, height, row['Class'], row['Confidence'], row['Xmin'], row['Ymin'], row['Xmax'],
              row['Ymax'], row['Is_occluded'], row['Is_truncated'], row['Is_depiction'], 'False', 'False',
-             str(ignore_roi(row=row, dimensions=(width, height))), 'False', '', purpose, get_current_datetime(), '',
-             ''])
+             is_ignored, 'False', '', purpose, get_current_datetime(), '', ''])
 
 
 def main():

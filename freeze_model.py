@@ -25,15 +25,15 @@ parser = ArgumentParser(description=__description__)
 parser.add_argument("--input-type", type=str, choices=("image_tensor", "tf_example", "encoded_image_string_tensor"),
                     default="image_tensor",
                     help="Type of input node, default is {default}.".format(default="image_tensor"))
-parser.add_argument("--config-path", type=str, default="training/config/smartbin_pipeline.config",
+parser.add_argument("--config-path", type=str, default=PIPELINE_CONFIG_PATH,
                     help="Path of the model config file, default is {default}.".format(
-                        default="training/config/smartbin_pipeline.config"))
+                        default=PIPELINE_CONFIG_PATH))
 parser.add_argument("--checkpoint-prefix", type=str, default="model.ckpt",
                     help="Path to trained checkpoint, typically of the form path/to/model.ckpt, default is {default}.".format(
                         default="model.ckpt"))
-parser.add_argument("--output-directory", type=str, default="training/outputs",
+parser.add_argument("--output-directory", type=str, default=OUTPUTS_DIR,
                     help="Path to write outputs, default is {default}.".format(
-                        default="training/outputs"))
+                        default=OUTPUTS_DIR))
 parser.add_argument("--config-override", type=str, default="",
                     help="Override pipeline config file content, default is {default}.".format(
                         default="''"))
@@ -42,8 +42,6 @@ parser.add_argument("--write-inference-graph", type=bool, default=False,
                         default=False))
 args = parser.parse_args()
 
-
-# slim = tf.contrib.slim
 
 def main(_):
     """
@@ -54,7 +52,7 @@ def main(_):
 
     # Retrieve latest checkpoint prefix.
     pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-    latest_checkpoint = find_latest_checkpoint(dir=CHECKPOINTS_DIR, prefix=args.checkpoints_prefix)
+    latest_checkpoint = find_latest_checkpoint(dir=CHECKPOINTS_DIR, prefix=args.checkpoint_prefix)
 
     if latest_checkpoint is None:
         return
