@@ -1,4 +1,7 @@
 # Smartbin
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/30c5c586a0b94f2db6801bf31512dd3d)](https://www.codacy.com/app/Cybermated/Smartbin_AI?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Cybermated/Smartbin_AI&amp;utm_campaign=Badge_Grade)
+
 Smartbin AI is a personal project aiming at training an artifial intelligence from scratch to detect 
 garbage (plastic bottles, cans, tin cans, plastic containers...).
 It relies on both Tensorflow and OpenCV for Python 3.
